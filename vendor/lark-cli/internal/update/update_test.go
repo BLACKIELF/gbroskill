@@ -1,0 +1,301 @@
+// Copyright (c) 2026 Lark Technologies Pte. Ltd.
+// SPDX-License-Identifier: MIT
+
+package update
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	exttransport "github.com/larksuite/cli/extension/transport"
+	"github.com/larksuite/cli/internal/distribution"
+	"github.com/larksuite/cli/internal/vfs"
+)
+
+// roundTripFunc adapts a function to http.RoundTripper.
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }
+
+type updateExternalProvider struct {
+	interceptor exttransport.Interceptor
+	manifestURL string
+	rewriter    exttransport.URLRewriter
+}
+
+func (p updateExternalProvider) Name() string { return "update-external-test" }
+
+func (p updateExternalProvider) ResolveInterceptor(context.Context) exttransport.Interceptor {
+	return p.interceptor
+}
+
+func (p updateExternalProvider) ResolveManifestURL(context.Context) string {
+	return p.manifestURL
+}
+
+func (p updateExternalProvider) ResolveURLRewriter(context.Context) exttransport.URLRewriter {
+	return p.rewriter
+}
+
+func (updateExternalProvider) SupportsRequestClass(class exttransport.RequestClass) bool {
+	return class == exttransport.RequestClassExternal
+}
+
+type updateExternalInterceptor struct {
+	calls int
+}
+
+type updateRewriteFunc func(string) string
+
+func (f updateRewriteFunc) RewriteURL(rawURL string) string { return f(rawURL) }
+
+func (i *updateExternalInterceptor) PreRoundTrip(req *http.Request) func(*http.Response, error) {
+	i.calls++
+	req.Header.Set("X-External-Route", "1")
+	return nil
+}
+
+func TestManifestCacheUsesExactTargetAndSourceIdentity(t *testing.T) {
+	clearSkipEnv(t)
+	t.Setenv("LARKSUITE_CLI_CONFIG_DIR", t.TempDir())
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-External-Route") != "" {
+			t.Fatal("manifest request passed through the request interceptor")
+		}
+		target := "old-target"
+		if r.URL.Path == "/second" {
+			target = "second-target"
+		}
+		fmt.Fprintf(w, `{"schema":1,"version":%q,"artifacts":{"skills":{"url":"https://dist.example/skills","checksum":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},%q:{"url":"https://dist.example/binary","checksum":"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"}}}`, target, distribution.CurrentPlatformKey())
+	}))
+	defer server.Close()
+	previousProvider := exttransport.GetProvider()
+	previousClient := distribution.DefaultClient
+	distribution.DefaultClient = server.Client()
+	exttransport.Register(updateExternalProvider{interceptor: &updateExternalInterceptor{}, manifestURL: server.URL + "/first"})
+	t.Cleanup(func() {
+		exttransport.Register(previousProvider)
+		distribution.DefaultClient = previousClient
+	})
+
+	RefreshCache(context.Background(), "new-current")
+	stateBytes, err := vfs.ReadFile(statePath())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(stateBytes), server.URL) {
+		t.Fatal("update cache persisted the manifest URL")
+	}
+	info := CheckCached(context.Background(), "new-current")
+	if info == nil || info.Latest != "old-target" || info.Source != "manifest" {
+		t.Fatalf("CheckCached = %#v", info)
+	}
+
+	// A different manifest is a different source even while the 24-hour cache
+	// from the first source is fresh.
+	exttransport.Register(updateExternalProvider{manifestURL: server.URL + "/second"})
+	RefreshCache(context.Background(), "new-current")
+	info = CheckCached(context.Background(), "new-current")
+	if info == nil || info.Latest != "second-target" {
+		t.Fatalf("CheckCached after source switch = %#v", info)
+	}
+}
+
+// clearSkipEnv unsets all env vars that shouldSkip checks,
+// preventing the host environment (e.g. CI=true) from polluting test results.
+func clearSkipEnv(t *testing.T) {
+	t.Helper()
+	for _, key := range []string{"LARKSUITE_CLI_NO_UPDATE_NOTIFIER", "CI", "BUILD_NUMBER", "RUN_ID"} {
+		t.Setenv(key, "")
+		os.Unsetenv(key)
+	}
+}
+
+func mustParseURL(raw string) *url.URL {
+	u, err := url.Parse(raw)
+	if err != nil {
+		panic(err)
+	}
+	return u
+}
+
+func TestShouldSkip(t *testing.T) {
+	tests := []struct {
+		name    string
+		version string
+		env     map[string]string
+		want    bool
+	}{
+		{"DEV", "DEV", nil, true},
+		{"dev_lower", "dev", nil, true},
+		{"empty", "", nil, true},
+		{"CI", "1.0.0", map[string]string{"CI": "true"}, true},
+		{"BUILD_NUMBER", "1.0.0", map[string]string{"BUILD_NUMBER": "42"}, true},
+		{"RUN_ID", "1.0.0", map[string]string{"RUN_ID": "123"}, true},
+		{"notifier_off", "1.0.0", map[string]string{"LARKSUITE_CLI_NO_UPDATE_NOTIFIER": "1"}, true},
+		{"git_describe", "v1.0.0-12-g9b933f1", nil, true},
+		{"git_dirty", "v1.0.0-12-g9b933f1-dirty", nil, true},
+		{"commit_hash", "9b933f1", nil, true},
+		{"clean_semver", "1.0.0", nil, false},
+		{"clean_semver_v", "v1.0.0", nil, false},
+		{"prerelease_beta", "1.0.0-beta.1", nil, false},
+		{"prerelease_rc", "2.0.0-rc.1", nil, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			clearSkipEnv(t)
+			for k, v := range tt.env {
+				t.Setenv(k, v)
+			}
+			got := shouldSkip(tt.version, false)
+			if got != tt.want {
+				t.Errorf("shouldSkip(%q) = %v, want %v", tt.version, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestUpdateInfoMethods(t *testing.T) {
+	info := &UpdateInfo{Current: "1.0.0", Latest: "2.0.0"}
+	got := info.Message()
+	want := "lark-cli 2.0.0 available, current 1.0.0, run: lark-cli update"
+	if got != want {
+		t.Errorf("Message() = %q, want %q", got, want)
+	}
+}
+
+func TestCheckCached(t *testing.T) {
+	clearSkipEnv(t)
+	tmp := t.TempDir()
+	t.Setenv("LARKSUITE_CLI_CONFIG_DIR", tmp)
+
+	// No cache → nil
+	info := CheckCached(context.Background(), "1.0.0")
+	if info != nil {
+		t.Errorf("expected nil with no cache, got %+v", info)
+	}
+
+	// Write cache with newer version
+	state := &updateState{LatestVersion: "2.0.0", CheckedAt: time.Now().Unix()}
+	data, _ := json.Marshal(state)
+	os.WriteFile(filepath.Join(tmp, stateFile), data, 0644)
+
+	info = CheckCached(context.Background(), "1.0.0")
+	if info == nil {
+		t.Fatal("expected update info, got nil")
+	}
+	if info.Latest != "2.0.0" || info.Current != "1.0.0" {
+		t.Errorf("unexpected info: %+v", info)
+	}
+
+	// Same version → nil
+	info = CheckCached(context.Background(), "2.0.0")
+	if info != nil {
+		t.Errorf("expected nil when versions match, got %+v", info)
+	}
+}
+
+func TestRefreshCache(t *testing.T) {
+	clearSkipEnv(t)
+	tmp := t.TempDir()
+	t.Setenv("LARKSUITE_CLI_CONFIG_DIR", tmp)
+
+	// Set up mock npm registry via DefaultClient
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(npmLatestResponse{Version: "3.0.0"})
+	}))
+	defer srv.Close()
+
+	// Redirect all requests to the mock server.
+	DefaultClient = srv.Client()
+	DefaultClient.Transport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		req.URL = mustParseURL(srv.URL + req.URL.Path)
+		return http.DefaultTransport.RoundTrip(req)
+	})
+	defer func() { DefaultClient = nil }()
+
+	RefreshCache(context.Background(), "1.0.0")
+
+	// Verify cache was written
+	info := CheckCached(context.Background(), "1.0.0")
+	if info == nil {
+		t.Fatal("expected update info after refresh, got nil")
+	}
+	if info.Latest != "3.0.0" {
+		t.Errorf("expected latest 3.0.0, got %s", info.Latest)
+	}
+
+	// Second refresh should be no-op (cache is fresh) — won't hit network.
+	RefreshCache(context.Background(), "1.0.0")
+}
+
+func TestFetchLatestVersionRewritesRegistryAndUsesExternalClass(t *testing.T) {
+	t.Setenv("LARKSUITE_CLI_CONFIG_DIR", t.TempDir())
+	t.Setenv("LARK_CLI_NO_PROXY", "")
+	previousClient := DefaultClient
+	DefaultClient = nil
+	t.Cleanup(func() { DefaultClient = previousClient })
+
+	previousProvider := exttransport.GetProvider()
+	interceptor := &updateExternalInterceptor{}
+	exttransport.Register(updateExternalProvider{
+		interceptor: interceptor,
+		rewriter: updateRewriteFunc(func(rawURL string) string {
+			return strings.Replace(rawURL, "registry.npmjs.org", "registry.example.test", 1)
+		}),
+	})
+	t.Cleanup(func() { exttransport.Register(previousProvider) })
+
+	previousTransport := http.DefaultTransport
+	var receivedHeader, receivedURL string
+	http.DefaultTransport = roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		receivedHeader = req.Header.Get("X-External-Route")
+		receivedURL = req.URL.String()
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       io.NopCloser(strings.NewReader(`{"version":"1.2.3"}`)),
+			Request:    req,
+		}, nil
+	})
+	t.Cleanup(func() { http.DefaultTransport = previousTransport })
+
+	if _, err := fetchLatestVersion(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	if interceptor.calls != 1 || receivedHeader != "1" {
+		t.Fatalf("external route = calls %d, header %q; want 1, %q", interceptor.calls, receivedHeader, "1")
+	}
+	if receivedURL != "https://registry.example.test/@larksuite/cli/latest" {
+		t.Fatalf("registry URL = %q, want rewritten CLI-owned URL", receivedURL)
+	}
+}
+
+func TestPendingAtomicAccess(t *testing.T) {
+	// Initially nil
+	if got := GetPending(); got != nil {
+		t.Errorf("expected nil, got %+v", got)
+	}
+
+	info := &UpdateInfo{Current: "1.0.0", Latest: "2.0.0"}
+	SetPending(info)
+
+	got := GetPending()
+	if got == nil || got.Current != "1.0.0" || got.Latest != "2.0.0" {
+		t.Errorf("unexpected pending: %+v", got)
+	}
+
+	// Clean up for other tests
+	SetPending(nil)
+}

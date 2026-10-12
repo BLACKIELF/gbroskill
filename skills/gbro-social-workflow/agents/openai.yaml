@@ -1,0 +1,4 @@
+interface:
+  display_name: "GBro 图文工作流"
+  short_description: "统一 GBro 图文、AI短视频文案、教程与商品素材规则，核验来源并按授权交付"
+  default_prompt: "使用 $gbro-social-workflow 续接当前图文或 AI 短视频文案任务，沿用已确认的结构、文案和授权，完成本次要求的内容及交付。"

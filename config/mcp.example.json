@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "gbro-tiktok": {
+      "command": "/absolute/path/to/gbroskill/runtime/bin/gbro-publish",
+      "args": ["tiktok-mcp"],
+      "env": {
+        "GBRO_DATA_DIR": "/absolute/path/to/private/gbro-data"
+      }
+    },
+    "stylewx": {
+      "command": "node",
+      "args": ["/absolute/path/to/gbroskill/vendor/stylewx/apps/mcp-server/dist/index.js", "--transport", "stdio"]
+    }
+  }
+}

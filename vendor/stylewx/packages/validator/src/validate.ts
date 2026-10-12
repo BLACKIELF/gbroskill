@@ -1,0 +1,368 @@
+/**
+ * 微信兼容性校验器：对渲染后的 HTML 做三类检查（CSS 白名单 / HTML 结构 / 内容）。
+ * 输出结构化报告 { pass, issues: [{ rule, severity, message, suggestion, location }] }。
+ * 同构：不依赖 DOM / Node 独有 API。
+ */
+import { unified } from 'unified'
+import rehypeParse from 'rehype-parse'
+import {
+  parseStyleDeclarations,
+  classifyCssProperty,
+  findUnsafeCssValue,
+} from '@stylewx/theme'
+import { validationReportSchema } from './report.js'
+import type { ValidationIssue, ValidationReport } from './report.js'
+
+/** 微信编辑器会过滤/不支持的标签。 */
+const FORBIDDEN_TAGS = new Set([
+  'script',
+  'style',
+  'iframe',
+  'object',
+  'embed',
+  'applet',
+  'canvas',
+  'form',
+  'input',
+  'select',
+  'textarea',
+  'button',
+  'link',
+  'meta',
+  'base',
+  'frame',
+  'frameset',
+  'audio',
+  'video',
+])
+
+/** 微信允许的图片域名（上传素材库后即此类域名）。 */
+const ALLOWED_IMAGE_HOSTS = ['mmbiz.qpic.cn', 'wx.qlogo.cn', 'mp.weixin.qq.com']
+
+/** 正文文本长度上限的软告警阈值（字符数）。 */
+const WORD_COUNT_WARNING = 30000
+
+const FORBIDDEN_TAG_SUGGESTION = (tag: string): string =>
+  `「${tag}」标签微信编辑器会过滤，无法保留。请删除，或改用更基础的排版结构（如引用、图片、段落）表达。`
+
+const EVENT_HANDLER_SUGGESTION =
+  '事件属性（on*) 会被微信过滤且存在安全风险，请删除该属性。'
+const JS_URL_SUGGESTION =
+  'javascript: 链接在微信内会被拦截，请改为正常的 http(s) 链接或删除。'
+const STYLE_TAG_SUGGESTION =
+  '<style> 标签微信编辑器会丢弃，请在渲染阶段使用 juice 把样式内联到元素上，不要输出 <style>。'
+const CSS_PROP_SUGGESTION = (prop: string): string =>
+  `属性「${prop}」已被真实微信实测会过滤（如 position / filter 等），请从主题中移除，或改用微信保留的基础属性表达。`
+
+const IMAGE_SUGGESTION =
+  '外链图片微信会被拦截/无法显示。请先上传到微信公众号素材库（或使用图床得到 mmbiz.qpic.cn 链接）后再发布。'
+const HASH_ANCHOR_SUGGESTION =
+  '微信 draft/add 会直接拒绝含 `#` 锚点的链接（errcode 45166，实测）。请把 href 改成完整的 http(s) 地址，或改用不带跳转的视觉目录。'
+const ID_STRIPPED_SUGGESTION =
+  '微信会剥离所有 id 属性（实测 draft/add → draft/get 后 id 全部消失）。请勿依赖 id 做锚点、CSS 选择器或 SVG 引用。'
+const DIV_TAG_SUGGESTION =
+  '微信编辑器的标签白名单里没有 <div>，粘贴时会把壳拆掉，其上的 background-color / border-radius / padding / border 会一起消失（只剩里面的文字）。请改用 <section>。'
+const QUOTED_FONT_FAMILY_SUGGESTION =
+  '微信的 style 解析器处理不了 font-family 里的引号：整条声明会被丢弃，并连带把同一 style 里后续的 color / font-size / line-height 一起污染。去掉引号即可（`Georgia, Songti SC, SimSun, serif` 仍是合法 CSS）。'
+const SVG_URL_REF_SUGGESTION =
+  '微信会剥离 id，因此 `url(#…)` 引用（渐变、裁剪、遮罩、<use>）在读者端全部失效。请改用纯色填充或叠加图形实现同样效果。'
+
+interface HastNode {
+  type: string
+  tagName?: string
+  value?: string
+  properties?: Record<string, unknown>
+  children?: HastNode[]
+}
+
+function isElement(node: HastNode): node is HastNode & { tagName: string; properties: Record<string, unknown> } {
+  return node.type === 'element' && typeof node.tagName === 'string'
+}
+
+function textOf(node: HastNode): string {
+  if (node.type === 'text') return node.value ?? ''
+  if (node.type === 'comment') return ''
+  let out = ''
+  if (node.children) for (const c of node.children) out += textOf(c)
+  return out
+}
+
+function countWords(text: string): number {
+  const cjk = text.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g)?.length ?? 0
+  const latin = text.replace(/[\u4e00-\u9fff\u3400-\u4dbf]/g, ' ').match(/[a-zA-Z0-9]+/g)?.length ?? 0
+  return cjk + latin
+}
+
+function isAllowedImageUrl(src: string): boolean {
+  const s = src.trim()
+  if (s.startsWith('data:image/')) return true
+  if (s.startsWith('//')) {
+    const host = s.slice(2).split('/')[0]?.toLowerCase() ?? ''
+    return ALLOWED_IMAGE_HOSTS.includes(host)
+  }
+  try {
+    const url = new URL(s)
+    const host = url.hostname.toLowerCase()
+    return (
+      host === 'mmbiz.qpic.cn' ||
+      host.endsWith('.qpic.cn') ||
+      ALLOWED_IMAGE_HOSTS.includes(host)
+    )
+  } catch {
+    // 非 URL（相对路径等）按外链处理，提示上传素材库。
+    return false
+  }
+}
+
+interface WalkState {
+  issues: ValidationIssue[]
+  imageCount: number
+  text: string
+}
+
+function walk(node: HastNode, location: string, state: WalkState): void {
+  if (node.type === 'text') {
+    state.text += node.value ?? ''
+    return
+  }
+  if (!isElement(node)) return
+
+  const tag = node.tagName.toLowerCase()
+  const tagLocation = `${location} > ${tag}`
+
+  // 1. 禁止标签
+  if (FORBIDDEN_TAGS.has(tag)) {
+    state.issues.push({
+      rule: 'no-forbidden-tag',
+      severity: 'error',
+      message: `检测到微信不支持的标签「<${tag}>」。`,
+      suggestion: FORBIDDEN_TAG_SUGGESTION(tag),
+      location: tagLocation,
+    })
+  }
+
+  // 2. 事件属性 & 危险属性
+  // 微信编辑器粘贴时会拆掉 <div> 壳（白名单里没有 div），样式跟着壳一起没了。
+  if (tag === 'div') {
+    state.issues.push({
+      rule: 'div-will-be-unwrapped',
+      severity: 'warning',
+      message: '检测到 <div>。微信编辑器会拆掉 div 壳，其上的背景色/圆角/内边距会全部丢失。',
+      suggestion: DIV_TAG_SUGGESTION,
+      location: tagLocation,
+    })
+  }
+  for (const [attr, raw] of Object.entries(node.properties)) {
+    const key = attr.toLowerCase()
+    if (key.startsWith('on')) {
+      state.issues.push({
+        rule: 'no-event-handler-attr',
+        severity: 'error',
+        message: `属性「${attr}」是事件处理函数，微信会过滤且存在安全风险。`,
+        suggestion: EVENT_HANDLER_SUGGESTION,
+        location: `${tagLocation}[${attr}]`,
+      })
+    }
+    if (key === 'srcdoc') {
+      state.issues.push({
+        rule: 'no-dangerous-attr',
+        severity: 'error',
+        message: `属性「${attr}」可能导致 HTML 注入。`,
+        suggestion: '请删除该属性。',
+        location: `${tagLocation}[${attr}]`,
+      })
+    }
+    if (typeof raw === 'string' && /^javascript:/i.test(raw.trim())) {
+      state.issues.push({
+        rule: 'no-dangerous-url',
+        severity: 'error',
+        message: `发现了 javascript: 链接，微信内会被拦截。`,
+        suggestion: JS_URL_SUGGESTION,
+        location: `${tagLocation}[${attr}]`,
+      })
+    }
+    // 微信会剥离 id（实测）：任何依赖 id 的引用都会失效
+    if (key === 'id') {
+      state.issues.push({
+        rule: 'id-will-be-stripped',
+        severity: 'warning',
+        message: `属性「id」会被微信剥离，无法在读者端生效。`,
+        suggestion: ID_STRIPPED_SUGGESTION,
+        location: `${tagLocation}[id]`,
+      })
+    }
+    // SVG 的 url(#id) 引用在 id 被剥离后必然失效
+    if (key !== 'style' && typeof raw === 'string' && /url\(\s*['"]?#/.test(raw)) {
+      state.issues.push({
+        rule: 'svg-url-ref-broken',
+        severity: 'error',
+        message: `属性「${attr}」引用了 url(#…)，但微信会剥离 id，该引用在读者端必然失效。`,
+        suggestion: SVG_URL_REF_SUGGESTION,
+        location: `${tagLocation}[${attr}]`,
+      })
+    }
+    // 页内锚点：draft/add 实测直接报 45166
+    if (key === 'href' && typeof raw === 'string' && raw.trim().startsWith('#')) {
+      state.issues.push({
+        rule: 'no-hash-anchor',
+        severity: 'error',
+        message: `页内锚点链接「${raw.trim()}」会被微信 draft/add 拒绝（实测 errcode 45166）。`,
+        suggestion: HASH_ANCHOR_SUGGESTION,
+        location: `${tagLocation}[href]`,
+      })
+    }
+  }
+
+  // 3. 内联样式 -> CSS 三档校验（safe 放行 / gray、unknown 警告 / banned 错误）
+  const styleValue = node.properties.style
+  if (typeof styleValue === 'string' && styleValue.trim()) {
+    for (const decl of parseStyleDeclarations(styleValue)) {
+      const tier = classifyCssProperty(decl.property)
+      // font-family 里的引号会把微信的 style 解析器搞崩，连带丢掉后续声明。
+      if (/^font-family$/i.test(decl.property) && /["']/.test(decl.value)) {
+        state.issues.push({
+          rule: 'quoted-font-family',
+          severity: 'error',
+          message: 'font-family 里含引号，微信会丢掉整条声明，并连带污染同一 style 里后面的属性。',
+          suggestion: QUOTED_FONT_FAMILY_SUGGESTION,
+          location: `${tagLocation}@${decl.property}`,
+        })
+      }
+      if (tier === 'banned') {
+        state.issues.push({
+          rule: 'css-property-banned',
+          severity: 'error',
+          message: `内联样式使用了真实微信实测会过滤的属性「${decl.property}」。`,
+          suggestion: CSS_PROP_SUGGESTION(decl.property),
+          location: `${tagLocation}@${decl.property}`,
+        })
+      } else if (tier === 'gray') {
+        state.issues.push({
+          rule: 'css-property-gray',
+          severity: 'warning',
+          message: `内联样式使用了灰色属性「${decl.property}」：微信草稿 API 实测会保留，但编辑器粘贴/读者渲染仍不确定。`,
+          suggestion: '若需在微信里稳定呈现，建议改用基础排版属性表达；否则可保留（如有问题可在编辑器里再调整）。',
+          location: `${tagLocation}@${decl.property}`,
+        })
+      } else if (tier === 'unknown') {
+        state.issues.push({
+          rule: 'css-property-unknown',
+          severity: 'warning',
+          message: `内联样式使用了未纳入已知白名单的属性「${decl.property}」，微信兼容性未确认。`,
+          suggestion: '建议确认该属性在微信端的表现；若不放心，用已验证的基础属性表达。',
+          location: `${tagLocation}@${decl.property}`,
+        })
+      }
+      if (/url\(\s*['"]?#/.test(decl.value)) {        state.issues.push({
+          rule: 'svg-url-ref-broken',
+          severity: 'error',
+          message: `属性「${decl.property}」引用了 url(#…)，但微信会剥离 id，该引用在读者端必然失效。`,
+          suggestion: SVG_URL_REF_SUGGESTION,
+          location: `${tagLocation}@${decl.property}`,
+        })
+      }
+      const unsafe = findUnsafeCssValue(decl.value)
+      if (unsafe) {
+        state.issues.push({
+          rule: 'css-value-unsafe',
+          severity: 'warning',
+          message: `属性「${decl.property}」的值包含微信表现不稳定的内容：${unsafe}`,
+          suggestion: unsafe,
+          location: `${tagLocation}@${decl.property}`,
+        })
+      }
+    }
+  }
+
+  // 4. 图片检查
+  if (tag === 'img') {
+    state.imageCount += 1
+    const src = node.properties.src
+    if (typeof src === 'string' && src.trim() && !isAllowedImageUrl(src)) {
+      state.issues.push({
+        rule: 'external-image',
+        severity: 'warning',
+        message: '检测到外链图片（非微信素材库域名）。',
+        suggestion: IMAGE_SUGGESTION,
+        location: `${tagLocation}#${src.slice(0, 60)}`,
+      })
+    }
+  }
+
+  // 递归
+  if (node.children) {
+    for (const child of node.children) walk(child, tagLocation, state)
+  }
+}
+
+/** 把 HTML 字符串解析为 hast 根节点。 */
+export function parseHtml(html: string): HastNode {
+  const processor = unified().use(rehypeParse, { fragment: true })
+  const root = processor.parse(html) as HastNode
+  return root
+}
+
+/**
+ * 校验一段 HTML 是否可安全发布到微信公众号，返回结构化报告（恒不抛错，失败信息写入 issues）。
+ */
+export function validateHtml(html: string): ValidationReport {
+  const state: WalkState = { issues: [], imageCount: 0, text: '' }
+  let root: HastNode
+  try {
+    root = parseHtml(html)
+  } catch (error) {
+    return {
+      pass: false,
+      issues: [
+        {
+          rule: 'unparseable-html',
+          severity: 'error',
+          message: `HTML 无法解析：${error instanceof Error ? error.message : String(error)}`,
+          suggestion: '请检查并修正 HTML 语法后再校验。',
+          location: '(document)',
+        },
+      ],
+    }
+  }
+  for (const child of root.children ?? []) walk(child, '(document)', state)
+
+  // 5. 图片数量
+  if (state.imageCount > 15) {
+    state.issues.push({
+      rule: 'image-count-high',
+      severity: 'warning',
+      message: `图片数量较多（${state.imageCount} 张），可能影响加载与阅读体验。`,
+      suggestion: '建议精简配图（如压缩体积、删除冗余图），或将长图拆分为多张。',
+      location: '(document)',
+    })
+  }
+  if (state.imageCount === 0) {
+    state.issues.push({
+      rule: 'image-count-zero',
+      severity: 'info',
+      message: '正文中未检测到图片。',
+      suggestion: '若内容需要配图，请补充；纯文字文章可忽略此提示。',
+      location: '(document)',
+    })
+  }
+
+  // 6. 正文字数上限提示
+  const words = countWords(state.text)
+  if (words > WORD_COUNT_WARNING) {
+    state.issues.push({
+      rule: 'word-count-limit',
+      severity: 'warning',
+      message: `正文字数约 ${words} 字，已超过 ${WORD_COUNT_WARNING} 字的软上限。`,
+      suggestion: '考虑压缩内容或拆分为多篇发布；若必需，请确认编辑器可完整承载。',
+      location: '(document)',
+    })
+  }
+
+  const pass = state.issues.every((issue) => issue.severity !== 'error')
+  const report: ValidationReport = { pass, issues: state.issues }
+  try {
+    return validationReportSchema.parse(report)
+  } catch {
+    return report
+  }
+}

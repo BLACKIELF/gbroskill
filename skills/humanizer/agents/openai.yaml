@@ -1,0 +1,6 @@
+interface:
+  display_name: "Humanizer zh"
+  short_description: "保留事实和作者声音，润色中文表达。"
+  default_prompt: "Use $humanizer-zh to edit this Chinese text for natural expression while preserving every factual claim, qualifier, and the author's voice."
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,23 @@
+diff --git a/SKILL.md b/SKILL.md
+index f1e9ca5..f86a27b 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -1,6 +1,6 @@
+ ---
+ name: video-use
+-description: Edit any video by conversation. Transcribe, cut, color grade, generate overlay animations, burn subtitles — for talking heads, montages, tutorials, travel, interviews. No presets, no menus. Ask questions, confirm the plan, execute, iterate, persist. Production-correctness rules are hard; everything else is artistic freedom.
++description: Edit any video by conversation. Trigger phrase “S动效插件” or shorthand “s动” routes to the installed Shaders animation library when the task needs React/WebGPU effects; otherwise transcribe, cut, color grade, generate overlay animations, or burn subtitles for talking heads, montages, tutorials, travel, and interviews. No presets, no menus. Ask questions, confirm the plan, execute, iterate, persist. Production-correctness rules are hard; everything else is artistic freedom.
+ ---
+ 
+ # Video Use
+@@ -55,6 +55,10 @@ The skill lives in `video-use/`. User footage lives wherever they put it. All se
+     └── final.mp4
+ ```
+ 
++## S动效插件（Shaders）
++
++When the user says “S动效插件”, route to the npm `shaders` library and its `shaders/react` interface for React/WebGPU effects in the current task. First identify the current project, installed version, dependency, source imports, and actual type definitions. Reuse the existing installation; a reference project does not become the target project, and a missing dependency does not authorize installation. This route does not require transcription or cutting setup for a task that only requests effects. Verify actual browser/WebGPU output and, for a video deliverable, the rendered file before reporting success. Distinguish local Codex routing from a ChatGPT connection; the alias alone does not connect ChatGPT to local tools.
++
+ ## Setup
+ 
+ First-time install lives in `install.md` (clone, deps, ffmpeg, skill registration, API key). Don't re-run it every session; on cold start just verify:

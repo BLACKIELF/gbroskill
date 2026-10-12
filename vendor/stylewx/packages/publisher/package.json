@@ -1,0 +1,55 @@
+{
+  "name": "@stylewx/publisher",
+  "version": "0.6.0",
+  "description": "stylewx publisher: WeChat Official Account API wrapper (access_token, image upload, draft/add) + external-image relocation. Node-only by design.",
+  "keywords": [
+    "wechat",
+    "wechat-article",
+    "official-account",
+    "draft",
+    "publish",
+    "微信公众号"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "wjunhere",
+    "url": "https://github.com/wjunhere"
+  },
+  "homepage": "https://github.com/wjunhere/stylewx#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wjunhere/stylewx.git",
+    "directory": "packages/publisher"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "rehype-parse": "^9.0.1",
+    "rehype-stringify": "^10.0.1",
+    "unified": "^11.0.5"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false
+}

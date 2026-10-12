@@ -1,0 +1,58 @@
+{
+  "name": "@stylewx/service",
+  "version": "0.6.0",
+  "description": "stylewx shared service layer: composes core/theme/validator/publisher/preview into the 6 high-level operations reused by both MCP Server and REST API.",
+  "keywords": [
+    "wechat",
+    "wechat-article",
+    "markdown",
+    "service",
+    "pipeline"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "wjunhere",
+    "url": "https://github.com/wjunhere"
+  },
+  "homepage": "https://github.com/wjunhere/stylewx#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wjunhere/stylewx.git",
+    "directory": "packages/service"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "@stylewx/components": "workspace:*",
+    "@stylewx/core": "workspace:*",
+    "@stylewx/preview": "workspace:*",
+    "@stylewx/publisher": "workspace:*",
+    "@stylewx/theme": "workspace:*",
+    "@stylewx/validator": "workspace:*",
+    "zod": "^4.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false
+}

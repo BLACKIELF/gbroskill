@@ -1,0 +1,186 @@
+import { describe, it, expect } from 'vitest'
+import { validateHtml, parseHtml } from './index.js'
+import type { ValidationIssue, ValidationReport } from './index.js'
+
+function issuesForRule(report: ValidationReport, rule: string): ValidationIssue[] {
+  return report.issues.filter((i) => i.rule === rule)
+}
+
+describe('HTML 结构校验', () => {
+  it('禁用的标签被识别（script/style/iframe 等）', () => {
+    const html = '<section><script>alert(1)</script><style>a{}</style><iframe src="x"></iframe></section>'
+    const r = validateHtml(html)
+    expect(issuesForRule(r, 'no-forbidden-tag').length).toBe(3)
+    expect(r.pass).toBe(false)
+  })
+
+  it('事件属性（on*）被拒绝', () => {
+    const html = '<section><p onclick="alert(1)">text</p></section>'
+    const r = validateHtml(html)
+    const issues = issuesForRule(r, 'no-event-handler-attr')
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.suggestion).toContain('删除')
+  })
+
+  it('javascript: 链接被拒绝', () => {
+    const html = '<section><a href="javascript:void(0)">x</a></section>'
+    const r = validateHtml(html)
+    expect(issuesForRule(r, 'no-dangerous-url').length).toBe(1)
+  })
+})
+
+describe('CSS 白名单校验（内联样式）', () => {
+  it('真实微信会过滤的属性(banned)被拒绝为 error', () => {
+    const html = '<section><p style="position: absolute; color: red;">x</p></section>'
+    const r = validateHtml(html)
+    const issues = issuesForRule(r, 'css-property-banned')
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.severity).toBe('error')
+    expect(issues[0]?.message).toContain('position')
+    expect(issues[0]?.suggestion).toContain('移除')
+    expect(r.pass).toBe(false)
+  })
+
+  it('灰色属性(transform)降级为 warning，不阻断 pass', () => {
+    const html = '<section><p style="transform: rotate(3deg); color: red;">x</p></section>'
+    const r = validateHtml(html)
+    const issues = issuesForRule(r, 'css-property-gray')
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.severity).toBe('warning')
+    expect(r.pass).toBe(true)
+  })
+
+  it('白名单内属性通过', () => {
+    const html = '<section><p style="color: #333; font-size: 15px; margin: 0;">x</p></section>'
+    const r = validateHtml(html)
+    expect(issuesForRule(r, 'css-property-not-whitelisted')).toHaveLength(0)
+  })
+
+  it('!important 与外部 url() 被标记为 warning(css-value-unsafe)', () => {
+    const html =
+      '<section><p style="color: red !important; background-image: url(https://evil/a.png);">x</p></section>'
+    const r = validateHtml(html)
+    const issues = issuesForRule(r, 'css-value-unsafe')
+    expect(issues.length).toBeGreaterThanOrEqual(2)
+    expect(issues.every((i) => i.severity === 'warning')).toBe(true)
+    expect(r.pass).toBe(true)
+  })
+})
+
+describe('内容校验', () => {
+  it('外链图片被标记为需要上传素材库', () => {
+    const html = '<section><img src="https://example.com/a.jpg"></section>'
+    const r = validateHtml(html)
+    const issues = issuesForRule(r, 'external-image')
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.suggestion).toContain('素材库')
+  })
+
+  it('微信素材库图片域名通过', () => {
+    const html = '<section><img src="https://mmbiz.qpic.cn/sz_mmbiz_png/abc/0?wx_fmt=png"></section>'
+    const r = validateHtml(html)
+    expect(issuesForRule(r, 'external-image')).toHaveLength(0)
+  })
+
+  it('data URI 图片通过', () => {
+    const html = '<section><img src="data:image/png;base64,xxxx"></section>'
+    const r = validateHtml(html)
+    expect(issuesForRule(r, 'external-image')).toHaveLength(0)
+  })
+
+  it('图片数量过多时告警', () => {
+    const imgs = '<img src="https://mmbiz.qpic.cn/a">'.repeat(16)
+    const r = validateHtml(`<section>${imgs}</section>`)
+    expect(issuesForRule(r, 'image-count-high')).toHaveLength(1)
+  })
+
+  it('无图片时给出 info 提示', () => {
+    const r = validateHtml('<section><p>纯文字</p></section>')
+    expect(issuesForRule(r, 'image-count-zero')).toHaveLength(1)
+  })
+
+  it('超长正文给出软上限提示', () => {
+    const longText = '字'.repeat(32000)
+    const r = validateHtml(`<section><p>${longText}</p></section>`)
+    expect(issuesForRule(r, 'word-count-limit')).toHaveLength(1)
+  })
+})
+
+describe('报告格式', () => {
+  it('无错误时 pass 为 true', () => {
+    const r = validateHtml('<section><p style="color:#333">ok</p></section>')
+    expect(r.pass).toBe(true)
+    // 仅无图片 info 提示，不应导致 pass = false
+    expect(r.issues.every((i) => i.severity !== 'error')).toBe(true)
+  })
+
+  it('含有 error 时 pass 为 false', () => {
+    const r = validateHtml('<section><script>x</script></section>')
+    expect(r.pass).toBe(false)
+  })
+
+  it('每条 issue 都包含 rule/severity/message/suggestion/location', () => {
+    const r = validateHtml('<section><img src="https://evil.com/a.png"></section>')
+    for (const issue of r.issues) {
+      expect(issue.rule).toBeTruthy()
+      expect(['error', 'warning', 'info']).toContain(issue.severity)
+      expect(issue.message).toBeTruthy()
+      expect(issue.suggestion).toBeTruthy()
+      expect(issue.location).toBeTruthy()
+    }
+  })
+
+  it('超长正文的软上限提示', () => {
+    const r = validateHtml(`<section><p>${'字'.repeat(32000)}</p></section>`)
+    expect(r.issues.some((i) => i.location === '(document)' && i.rule === 'word-count-limit')).toBe(true)
+  })
+
+  it('损坏 HTML 不抛错，返回 unparseable 错误', () => {
+    const r = validateHtml('<section><p')
+    // 解析容错，通常能作为文本恢复；若非则回退到 unparseable
+    expect(typeof r.pass).toBe('boolean')
+  })
+})
+
+describe('微信实测约束（draft/add → draft/get）', () => {
+  it('页内锚点 href="#..." 报错（实测 errcode 45166）', () => {
+    const r = validateHtml('<section><a href="#toc">目录</a></section>')
+    expect(r.pass).toBe(false)
+    expect(r.issues.some((i) => i.rule === 'no-hash-anchor' && i.severity === 'error')).toBe(true)
+  })
+
+  it('id 属性给出 warning（微信会剥离）', () => {
+    const r = validateHtml('<section><p id="x">hi</p></section>')
+    expect(r.pass).toBe(true)
+    expect(r.issues.some((i) => i.rule === 'id-will-be-stripped' && i.severity === 'warning')).toBe(true)
+  })
+
+  it('SVG url(#...) 引用报错（id 被剥离后必然失效）', () => {
+    const r = validateHtml('<section><svg viewBox="0 0 10 10"><rect width="10" height="10" fill="url(#g)"/></svg></section>')
+    expect(r.pass).toBe(false)
+    expect(r.issues.some((i) => i.rule === 'svg-url-ref-broken' && i.severity === 'error')).toBe(true)
+  })
+
+  it('内联样式里的 url(#...) 同样报错且不重复', () => {
+    const r = validateHtml('<section><div style="background-image:url(#x)">a</div></section>')
+    const hits = r.issues.filter((i) => i.rule === 'svg-url-ref-broken')
+    expect(hits).toHaveLength(1)
+  })
+
+  it('干净的 SVG + SMIL 动画可以通过', () => {
+    const svg =
+      '<section><svg viewBox="0 0 10 10"><rect width="10" height="10" fill="#409eff">' +
+      '<animate attributeName="opacity" values="1;0;1" dur="2s" repeatCount="indefinite"/></rect></svg></section>'
+    const r = validateHtml(svg)
+    expect(r.pass).toBe(true)
+    expect(r.issues.some((i) => i.rule === 'no-forbidden-tag')).toBe(false)
+  })
+})
+
+describe('parseHtml', () => {
+  it('返回 hast 根节点', () => {
+    const root = parseHtml('<section><p>hi</p></section>')
+    expect(root.type).toBe('root')
+    expect(root.children?.[0]?.type).toBe('element')
+  })
+})

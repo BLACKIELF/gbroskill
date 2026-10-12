@@ -1,0 +1,89 @@
+--- upstream/@stylewx/components/dist/svg.js
++++ installed/@stylewx/components/dist/svg.js
+@@ -7,7 +7,7 @@
+  * - 属性名被小写化（viewBox → viewbox），浏览器 HTML 解析器会按规范纠正回来，因此照常写驼峰即可；
+  * - `<animate>` / `<animateTransform>` / `<set>` + `begin="click"` 全部保留并真实生效。
+  */
+-import { styleAttr } from './style.js';
++import { styleAttr, escapeHtml } from './style.js';
+ /** 生成 `<svg>` 根元素：始终带 xmlns、viewBox、宽度自适应。 */
+ export function svgRoot(params) {
+     const style = {
+@@ -28,7 +28,7 @@
+         `fill="${params.fill ?? '#333333'}"`,
+         params.anchor ? `text-anchor="${params.anchor}"` : '',
+         params.weight ? `font-weight="${params.weight}"` : '',
+-        params.family ? `font-family="${params.family}"` : '',
++        params.family ? `font-family="${escapeHtml(params.family)}"` : '',
+         params.opacity !== undefined ? `opacity="${params.opacity}"` : '',
+     ]
+         .filter(Boolean)
+--- upstream/@stylewx/components/dist/components/interactive.js
++++ installed/@stylewx/components/dist/components/interactive.js
+@@ -8,7 +8,7 @@
+ import { resolveTone } from '../palette.js';
+ import { svgAnimate, svgCircle, svgRect, svgRoot, svgText } from '../svg.js';
+ import { wrapText } from '../text.js';
+-/** 点击展开：SVG 卡片，点击后答案淡入、按钮淡出（单向）。 */
++/** 点击展开：按钮与答案共享一个点击父组；答案淡入，按钮保留（单向）。 */
+ function renderReveal(node, ctx) {
+     const palette = ctx.palette;
+     const p = node.props;
+@@ -31,15 +31,7 @@
+         height: btnH,
+         rx: 10,
+         fill: tone.base,
+-        children: svgAnimate({
+-            attributeName: 'opacity',
+-            from: '1',
+-            to: '0',
+-            begin: 'click',
+-            dur: '0.35s',
+-            fill: 'freeze',
+-        }),
+-    });
++    }).replace('<rect ', '<rect fill-opacity="1" ');
+     const btnText = svgText({
+         x: width / 2,
+         y: 12 + btnH / 2 + 5,
+@@ -48,24 +40,20 @@
+         fill: tone.onBase,
+         anchor: 'middle',
+         weight: 600,
+-        children: svgAnimate({
+-            attributeName: 'opacity',
+-            from: '1',
+-            to: '0',
+-            begin: 'click',
+-            dur: '0.35s',
+-            fill: 'freeze',
+-        }),
+-    });
+-    const answerGroup = `<g opacity="0">` +
++    }).replace('<text ', '<text fill-opacity="1" ');
++    // fill-opacity is inherited: answer starts hidden while the button stays visible.
++    // A click on either label or rectangle bubbles to this shared group (no id/JS).
++    const answerGroup = `<g fill-opacity="0">` +
+         svgAnimate({
+-            attributeName: 'opacity',
++            attributeName: 'fill-opacity',
+             from: '0',
+             to: '1',
+             begin: 'click',
+             dur: '0.45s',
+             fill: 'freeze',
++            restart: 'never',
+         }) +
++        btn + btnText +
+         svgRect({
+             x: padX,
+             y: 12 + btnH + 10,
+@@ -87,7 +75,7 @@
+         `</g>`;
+     const svg = svgRoot({
+         viewBox: `0 0 ${width} ${height}`,
+-        children: btn + btnText + answerGroup,
++        children: answerGroup,
+     });
+     const caption = prop(p, 'caption');
+     const captionHtml = caption

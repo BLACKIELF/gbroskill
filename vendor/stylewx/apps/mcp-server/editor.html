@@ -1,0 +1,2697 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>stylewx 编辑器</title>
+<!-- 标志：校验帧 + 端点（内联 base64，保持 editor.html 自包含、离线可用）。
+     SVG 源见 apps/mcp-server/icon.svg，完整资产见 docs/assets/logo-*.svg -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230c1015'/%3E%3Cg fill='%23f9fafb'%3E%3Crect x='8' y='8' width='17' height='17' rx='4.6' fill='none' stroke='%23f9fafb' stroke-width='2.4' opacity='.38'/%3E%3Crect x='12' y='12.8' width='9' height='2.9' rx='1.5'/%3E%3Ccircle cx='23.5' cy='23.5' r='3.9'/%3E%3C/g%3E%3C/svg%3E" />
+<style>
+  /* ═══ 品牌令牌 · 方向 B 协议 Protocol ══════════════════════════════════
+     下面六个变量是唯一颜色来源，其余全部从它们混出来或取层级近似值。
+     改动顺序与核对依据见 docs/DESIGN.md「品牌体系」一节；
+     oklch→sRGB 的换算与对比度实测见 scripts/brand/check-contrast.mjs。 */
+  :root{
+    /* 六令牌 */
+    --bg:oklch(98.4% .002 250);          /* 冷纸 #f9fafb */
+    --surface:oklch(100% 0 0);           /* 白面 #ffffff */
+    --fg:oklch(17% .012 255);            /* 墨   #0c1015 */
+    --muted:oklch(45% .010 255);         /* 次级墨 #52565b */
+    --border:oklch(90% .005 255);        /* 发丝线 #dcdee1 */
+    --accent:oklch(46% .19 262);         /* 校验蓝 #114cbf */
+
+    /* 派生 · 只从上面六个混出来，不新增原始色 */
+    --accent-soft:color-mix(in oklch, var(--accent) 10%, var(--surface));
+    --accent-line:color-mix(in oklch, var(--accent) 26%, transparent);
+    --accent-hover:color-mix(in oklch, var(--accent) 88%, var(--fg));
+    --fg-soft:color-mix(in oklch, var(--fg) 5%, transparent);
+    --fg-hover:color-mix(in oklch, var(--fg) 85%, var(--bg));
+    --fg-line:color-mix(in oklch, var(--fg) 30%, var(--border));
+
+    /* 面层级（柔结构的地基）：纸底 → 白面 → 凹槽 → 深槽，共四档。
+       凹槽用来放输入控件与代码块。控件「陷进去」、卡片「浮起来」，
+       两个方向都有，界面才有纵深，而不是一堆同层级的白盒子。 */
+    --plane-1:var(--bg);
+    --plane-2:var(--surface);
+    --plane-3:color-mix(in oklch, var(--fg) 3.2%, var(--surface));
+    --plane-4:color-mix(in oklch, var(--fg) 6%, var(--surface));
+    /* 凹槽的顶边内阴影：输入框「内陷」的错觉来自这一条，不是边框 */
+    --inset-shadow:inset 0 1px 2px color-mix(in oklch, var(--fg) 5%, transparent);
+
+    /* 柔影（柔结构的签名）。三条硬规则，缺一条就不像柔结构：
+         1. 必须带色相：纯黑投影压在冷纸底上会发灰脏，所以掺一点纸底的色相；
+            看起来是环境光，不是灰雾。
+         2. 必须扩散：近影定边界 + 大半径低透明定浮起，两层缺一不可。
+         3. 必须分层级：卡片/面板/弹窗三档各不相同，不能一个值走天下。
+       发丝线仍然保留：线管边界，影管纵深，两者不互相替代。 */
+    --shadow:0 1px 2px color-mix(in oklch, var(--fg) 4%, transparent), 0 6px 16px -6px color-mix(in oklch, var(--fg) 9%, transparent);
+    --shadow-lg:0 2px 4px color-mix(in oklch, var(--fg) 4%, transparent), 0 16px 40px -12px color-mix(in oklch, var(--fg) 14%, transparent);
+    --lift-1:var(--shadow);              /* 卡片、面板：静置 */
+    --lift-2:0 1px 2px color-mix(in oklch, var(--fg) 5%, transparent), 0 12px 28px -10px color-mix(in oklch, var(--fg) 12%, transparent);
+    --lift-3:0 2px 6px color-mix(in oklch, var(--fg) 6%, transparent), 0 32px 64px -20px color-mix(in oklch, var(--fg) 20%, transparent);
+
+    /* 深色不是主题，是材质：代码/终端块、封面底、图片占位四处共用同一个深色 */
+    --dark:oklch(17% .012 255);
+    --dark-surface:oklch(21.5% .014 255);
+    --dark-fg:oklch(98% .002 250);
+    --dark-muted:oklch(72% .008 255);
+    --dark-accent:oklch(72% .15 262);    /* 暗底上的校验蓝必须提亮 */
+    --dark-border:color-mix(in oklch, var(--dark-fg) 14%, transparent);
+
+    /* 状态色 · 三档，成功/警告/失败在浅色场合的实测对比均 ≥6.6:1 */
+    --ok:oklch(44% .16 152);
+    --warn:oklch(45% .13 68);
+    --err:oklch(50% .19 25);
+
+    /* 兼容别名：模板里沿用旧的 --panel/--line/--ink 命名，映射到新令牌，
+       这样业务 JS 与 renderEditor 里注入的片段不必改动。 */
+    --panel:var(--surface);
+    --line:var(--border);
+    --line2:color-mix(in oklch, var(--border) 55%, var(--surface));
+    --ink:var(--fg);
+    /* 次级正文：原来是一个介于墨与次级墨之间的独立色，这里从两者混出，不新增原始色 */
+    --ink2:color-mix(in oklch, var(--fg) 62%, var(--muted));
+    --faint:var(--muted);
+    --brand:var(--accent);
+    --brand-d:var(--accent-hover);
+    --brand-sub:var(--accent-soft);
+    --blue:var(--accent);
+
+    --sidebar-w:252px;
+    /* 圆角档位 8 / 12 / 18：柔结构要的是「大圆角 + 同心内角」。
+       外角 18 只能配内角 12（差 6），乱配会出现两条不平行弧线。 */
+    --radius:18px; --radius-sm:12px; --m-r:8px;
+    --mono:ui-monospace,"SFMono-Regular","JetBrains Mono","SF Mono",Menlo,Consolas,monospace;
+    --serif:'Iowan Old Style','Charter',Georgia,'Songti SC','Source Han Serif SC',serif;
+
+    /* 字号阶：柔结构靠字重与颜色拉层级，不靠字号暴涨。五档够用。 */
+    --fs-micro:10.5px;
+    --fs-cap:11.5px;
+    --fs-body:12.5px;
+    --fs-lead:14px;
+    --fs-title:16px;
+
+    /* 动效：禁止 linear / ease-in-out。全部走同一条「重物落定」曲线，
+       快出慢入，让面板有质量感；90ms 的按压反馈另行变速。 */
+    --ease:cubic-bezier(.32,.72,0,1);
+    --ease-out:cubic-bezier(.16,1,.3,1);
+    --t-fast:140ms;
+    --t-base:220ms;
+    --t-slow:340ms;
+
+    color-scheme:light;
+    accent-color:var(--accent);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",system-ui,sans-serif;color:var(--fg);overflow:hidden;-webkit-font-smoothing:antialiased;
+    /* 纸底不是纯平涂：叠两层几乎看不见的冷色径向渐变，白面卡片浮上去才有「纸的厚度」。
+       平涂时白面与纸底只差 1.6% 明度，纵深就得全靠投影硬撑。 */
+    background:var(--bg);
+    background-image:radial-gradient(1200px 620px at 12% -8%,color-mix(in oklch,var(--accent) 3%,transparent),transparent 58%),radial-gradient(900px 520px at 96% 4%,color-mix(in oklch,var(--fg) 2%,transparent),transparent 55%);
+    background-attachment:fixed}
+  button{font:inherit}
+  /* 图标线宽全局归一（taste-skill：一页只能有一套图标族）。
+     历史上这条限只给工具条（§21.8 第 8 条，2.4/24 ≈ 1.5px 有效线宽），
+     后来发现同一屏里 1.06px 与 1.5px 混用才是真正的「不像一套」。
+     所以这里按「有效线宽」统一，而不是按原始值：24 网格、15px 渲染时 2.4→1.5px，
+     16px 渲染时 2.25→1.5px。CSS 属性选择器覆盖 presentation attribute（零特异性，可被任何类覆盖）。 */
+  svg[stroke-width]{stroke-width:2.3}
+  svg[viewBox="0 0 24 24"][width="14"],svg[viewBox="0 0 24 24"][width="15"]{stroke-width:2.4}
+  svg[viewBox="0 0 24 24"][width="16"],svg[viewBox="0 0 24 24"][width="18"]{stroke-width:2.2}
+  svg[viewBox="0 0 24 24"][width="20"]{stroke-width:1.9}
+  /* 选中文字与滚动条：一并声明，避免深色块里出现浏览器默认蓝 */
+  ::selection{background:var(--accent);color:var(--surface)}
+  .dark-panel ::selection,.comp-src ::selection{background:var(--dark-accent);color:var(--dark)}
+  *{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border);border:3px solid transparent;background-clip:content-box;border-radius:999px}
+  ::-webkit-scrollbar-thumb:hover{background:color-mix(in oklch,var(--muted) 55%,var(--border));background-clip:content-box}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--m-r)}
+  .app{display:flex;gap:16px;padding:16px;height:100vh}
+
+  /* ── 通用内陷槽 ────────────────────────────────────────────────────
+     柔结构的核心手法之一：输入控件不是「白底 + 描边」，而是「凹陷的槽」——
+     底色比所在容器深一档 + 顶边内阴影，视觉上就是被按进去的。 */
+  .well{background:var(--plane-3);border:1px solid var(--line2);box-shadow:var(--inset-shadow)}
+
+  /* ── 入场动画：浮层与弹窗的「被拿起来」感 ───────────────────────────
+     pop 用于下拉浮层（从入口向下生长）；sheet 用于居中弹窗（从深处升起）。
+     两者都只动 transform/opacity，不触发布局（GPU 安全）。
+     prefers-reduced-motion 时由底部全局断点归零。 */
+  @keyframes pop{
+    from{opacity:0;transform:translateY(-6px) scale(.97)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+  @keyframes sheet{
+    from{opacity:0;transform:translateY(14px) scale(.985)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+  @keyframes rise{
+    from{opacity:0;transform:translateY(6px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  @keyframes fade{
+    from{opacity:0}
+    to{opacity:1}
+  }
+
+  /* ---------- 左侧栏 ---------- */
+  /* 分层只靠 1px 发丝线：白面与纸底的明度差只有 1.6%，投影反而互相污染 */
+  .sidebar{width:var(--sidebar-w);flex:none;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--lift-1)}
+  .side-top{display:flex;align-items:center;gap:10px;padding:16px 16px 12px}
+  /* 标志底板：墨色渐变底 + 内高光。内高光是「机加工件」错觉的来源，
+     少了它就只是一块深色方块。 */
+  .logo{width:30px;height:30px;border-radius:10px;background:linear-gradient(160deg,color-mix(in oklch,var(--fg) 90%,var(--surface)),var(--fg));display:flex;align-items:center;justify-content:center;color:var(--surface);flex:none;box-shadow:inset 0 1px 0 color-mix(in oklch,var(--surface) 22%,transparent),0 2px 6px -2px color-mix(in oklch,var(--fg) 30%,transparent)}
+  .logo svg{width:18px;height:18px;display:block}
+  .side-brand{font-family:var(--mono);font-weight:600;font-size:var(--fs-lead);letter-spacing:-.01em}
+  .side-brand small{color:var(--muted);font-weight:400;margin-left:6px;font-size:var(--fs-cap);letter-spacing:0}
+  /* 主 CTA：柔结构要的是「一颗饱满的胶囊」，所以要三层——
+     底色渐变 + 顶部内高光 + 外部落影，而不是一块纯色矩形。 */
+  .new-btn{margin:2px 14px 10px;display:flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(180deg,color-mix(in oklch,var(--fg) 88%,var(--surface)),var(--fg));color:var(--surface);border:1px solid var(--fg);border-radius:var(--radius-sm);padding:11px;font-size:var(--fs-body);font-weight:600;cursor:pointer;letter-spacing:.01em;box-shadow:inset 0 1px 0 color-mix(in oklch,var(--surface) 18%,transparent),0 4px 12px -4px color-mix(in oklch,var(--fg) 34%,transparent);transition:box-shadow var(--t-base) var(--ease),transform 90ms var(--ease)}
+  .new-btn:hover{box-shadow:inset 0 1px 0 color-mix(in oklch,var(--surface) 24%,transparent),0 8px 20px -6px color-mix(in oklch,var(--fg) 42%,transparent);transform:translateY(-1px)}
+  .new-btn:active{transform:translateY(1px) scale(.985);box-shadow:inset 0 2px 4px color-mix(in oklch,var(--fg) 40%,transparent)}
+  .new-btn svg{flex:none;opacity:.9}
+  /* 导入导三连：并排三个同权重的按钮会显得散。做成「分段控件」——
+     共用一个凹槽底，段间用发丝线，读起来是一个控件而不是三个按钮。 */
+  .side-actions{display:flex;gap:0;margin:0 14px 14px;background:var(--plane-3);border:1px solid var(--line2);border-radius:var(--radius-sm);padding:2px;box-shadow:var(--inset-shadow)}
+  .side-btn{flex:1;background:none;border:0;color:var(--ink2);border-radius:calc(var(--radius-sm) - 4px);padding:7px 0;font-size:var(--fs-cap);cursor:pointer;transition:color var(--t-fast) var(--ease),background var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease);white-space:nowrap;position:relative}
+  .side-btn+.side-btn::before{content:'';position:absolute;left:0;top:24%;bottom:24%;width:1px;background:var(--line);transition:opacity var(--t-fast) var(--ease)}
+  .side-btn:hover{color:var(--fg);background:var(--plane-2);box-shadow:0 1px 2px color-mix(in oklch,var(--fg) 7%,transparent)}
+  .side-btn:hover::before,.side-btn:hover+.side-btn::before{opacity:0}
+  .side-btn[disabled]{color:var(--muted);cursor:not-allowed;background:none;box-shadow:none}
+  /* 导入框：与编辑器同源的等宽正文 */
+  .imp-text{width:100%;min-height:190px;border:1px solid var(--line2);border-radius:var(--radius-sm);padding:13px 14px;font:var(--fs-body)/1.65 var(--mono);color:var(--fg);resize:vertical;outline:none;background:var(--plane-3);box-shadow:var(--inset-shadow);transition:border-color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease),background var(--t-fast) var(--ease)}
+  .imp-text:hover{border-color:var(--fg-line)}
+  .imp-text:focus{border-color:var(--accent);background:var(--plane-2);box-shadow:0 0 0 3px var(--accent-soft)}
+  /* 组件库预览页 */
+  /* 用 .modal.comp-modal 提高优先级：基础 .modal/.modal-body 定义在后面，同优先级会覆盖掉这里 */
+  .modal.comp-modal{width:min(1240px,95vw);height:min(880px,92vh);max-width:none;display:flex;flex-direction:column;overflow:hidden}
+  .modal-body.comp-body{flex:1;min-height:0;display:flex;gap:0;padding:0;max-height:none;overflow:hidden}
+  /* 左栏是「导航列」：底板比右栏深一档（--plane-3），让两栏的分工一眼可读 */
+  .comp-side{width:272px;flex:none;border-right:1px solid var(--line2);display:flex;flex-direction:column;min-height:0;background:var(--plane-3)}
+  .comp-search{margin:12px 12px 8px;padding:8px 12px;border:1px solid var(--line2);border-radius:var(--radius-sm);font-size:var(--fs-body);outline:none;background:var(--plane-2);color:var(--fg);box-shadow:var(--inset-shadow);transition:border-color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease)}
+  .comp-search:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .comp-list{flex:1;overflow:auto;padding:0 8px 12px}
+  .comp-group{padding:10px 9px 5px;font-family:var(--mono);font-size:var(--fs-micro);font-weight:600;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;font-variant-numeric:tabular-nums}
+  .comp-item{display:block;width:100%;text-align:left;border:1px solid transparent;background:none;border-radius:var(--radius-sm);padding:8px 10px;font-size:var(--fs-body);color:var(--fg);cursor:pointer;transition:background var(--t-fast) var(--ease),color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease)}
+  .comp-item:hover{background:var(--plane-2);box-shadow:var(--shadow)}
+  .comp-item.on{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent);font-weight:600}
+  .comp-item .sub{display:block;font-size:var(--fs-cap);color:var(--muted);font-weight:400;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .comp-item.on .sub{color:color-mix(in oklch,var(--accent) 72%,var(--muted))}
+  /* 打开弹窗时列表条目逐条浮现（前 8 条带阶梯延迟）：
+     只动 transform/opacity；条目多时后面的直接出，不拖节奏 */
+  .overlay.show .comp-item{animation:rise var(--t-slow) var(--ease) both}
+  .overlay.show .comp-item:nth-child(-n+8):nth-child(1){animation-delay:40ms}
+  .overlay.show .comp-item:nth-child(-n+8):nth-child(2){animation-delay:80ms}
+  .overlay.show .comp-item:nth-child(-n+8):nth-child(3){animation-delay:120ms}
+  .overlay.show .comp-item:nth-child(-n+8):nth-child(4){animation-delay:160ms}
+  .overlay.show .comp-item:nth-child(-n+8):nth-child(5){animation-delay:200ms}
+  .overlay.show .comp-item:nth-child(-n+8):nth-child(6){animation-delay:240ms}
+  .overlay.show .comp-item:nth-child(-n+8):nth-child(7){animation-delay:280ms}
+  .overlay.show .comp-item:nth-child(-n+8):nth-child(8){animation-delay:320ms}
+  .comp-detail{flex:1;min-width:0;display:flex;flex-direction:column}
+  .comp-head{padding:16px 20px 12px;border-bottom:1px solid var(--line2)}
+  .comp-name{font-size:var(--fs-title);font-weight:700;color:var(--fg);letter-spacing:-.01em}
+  /* 组件名是等宽的 ::: 指令，用等宽字面而不是无衬线代码样式 */
+  .comp-name code{font-family:var(--mono);font-size:var(--fs-body);font-weight:600;color:var(--accent);background:var(--accent-soft);border:1px solid var(--accent-line);padding:1px 7px;border-radius:var(--m-r);margin-left:8px;vertical-align:2px}
+  .comp-desc{font-size:var(--fs-body);color:var(--muted);margin-top:7px;line-height:1.65}
+  .comp-slots{font-size:var(--fs-cap);color:var(--muted);margin-top:7px}
+  /* 参数表：不只列取值，还能直接改 —— 枚举/布尔点 chip，其余给输入框；改完下方预览实时重渲染。
+     取值是作者最容易猜错的地方（tone 写错不报错，会**静默回退到 primary**），所以默认展开摆这里，
+     而不是折叠进 details。取值列表来自组件目录（catalog.ts）的 props[].type，编辑器不自己维护一份。
+     上限按「参数最多的组件」定：image / cover 各 7 个参数，渲染高度约 236px，
+     给到 300px 就不用内部滚动、也不会把预览挤没（最矮情况再用 34vh 兜一下）。 */
+  .comp-params{margin-top:12px;max-height:min(300px,34vh);overflow:auto;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--plane-2)}
+  .comp-params table{width:100%;border-collapse:collapse}
+  .comp-params th{position:sticky;top:0;z-index:1;background:var(--plane-3);font-size:var(--fs-micro);font-weight:600;color:var(--muted);text-align:left;padding:6px 10px;white-space:nowrap;letter-spacing:.06em;text-transform:uppercase;font-family:var(--mono)}
+  .comp-params td{border-top:1px solid var(--line2);padding:6px 10px;font-size:var(--fs-cap);line-height:1.55;color:var(--ink2);vertical-align:top}
+  .comp-params td:first-child,.comp-params td:nth-child(3){white-space:nowrap}
+  /* 改过的行左侧亮一条细线，扫一眼就知道哪里动过 */
+  .comp-params tr.dirty td:first-child{box-shadow:inset 2px 0 0 var(--accent)}
+  .comp-pname{font-family:var(--mono);font-size:var(--fs-cap);font-weight:600;color:var(--fg)}
+  .comp-pdef{font-family:var(--mono);font-size:var(--fs-cap);color:var(--muted)}
+  .comp-type{font-family:var(--mono);font-size:var(--fs-cap);color:var(--muted)}
+  .comp-choice{display:inline-block;font-family:var(--mono);font-size:var(--fs-micro);line-height:19px;color:var(--ink2);background:var(--plane-2);border:1px solid var(--line);border-radius:var(--m-r);padding:0 6px;margin:0 3px 2px 0;cursor:pointer;transition:background var(--t-fast) var(--ease),color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease)}
+  .comp-choice:hover{border-color:var(--fg-line);color:var(--fg)}
+  .comp-choice.on{color:var(--accent);background:var(--accent-soft);border-color:var(--accent-line)}
+  .comp-choice:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .comp-input{width:100%;box-sizing:border-box;font-family:var(--mono);font-size:var(--fs-cap);color:var(--fg);background:var(--plane-2);border:1px solid var(--line2);border-radius:var(--m-r);padding:3px 7px;outline:none;box-shadow:var(--inset-shadow)}
+  .comp-input:focus{border-color:var(--accent);background:var(--plane-2);box-shadow:0 0 0 2px var(--accent-soft)}
+  .comp-input::placeholder{color:var(--muted)}
+  .comp-notes{margin-top:10px;font-size:var(--fs-cap);line-height:1.65;color:var(--muted)}
+  .comp-notes>div{padding:2px 0 2px 10px;border-left:2px solid var(--line)}
+  .comp-notes>div+div{margin-top:5px}
+  .comp-diag{border-color:var(--warn);color:var(--warn)}
+  .comp-diag.err{border-color:var(--err);color:var(--err)}
+  .comp-actions{display:flex;gap:8px;margin-top:12px}
+  #compGen.dirty{color:var(--accent);border-color:var(--accent-line);background:var(--accent-soft)}
+  /* 画布外的底板用与外壳同一纸底，让 390px 白面自己站住 */
+  .comp-preview-wrap{flex:1;min-height:0;overflow:auto;background:var(--plane-3);padding:18px;display:flex;justify-content:center;box-shadow:inset 0 1px 3px color-mix(in oklch,var(--fg) 4%,transparent)}
+  .comp-preview{width:390px;min-height:100%;border:1px solid var(--border);background:var(--surface);border-radius:var(--radius-sm);align-self:flex-start;box-shadow:var(--shadow)}
+  .comp-src{border-top:1px solid var(--line2);background:var(--plane-3);max-height:170px;overflow:auto}
+  .comp-src summary{padding:9px 20px;font-size:var(--fs-body);color:var(--muted);cursor:pointer;transition:color var(--t-fast) var(--ease)}
+  .comp-src summary:hover{color:var(--fg)}
+  .comp-src pre{margin:0;padding:0 20px 14px;font:var(--fs-body)/1.7 var(--mono);color:var(--ink2);white-space:pre-wrap;word-break:break-all}
+  .comp-empty{padding:44px 20px;font-size:var(--fs-body);color:var(--muted);text-align:center}
+  /* 主题预览页 */
+  .theme-prev{width:560px;max-width:100%;align-self:flex-start}
+  .th-inline{display:flex;align-items:center;gap:6px}
+  .th-dot{width:12px;height:12px;border-radius:50%;border:1px solid var(--border);display:inline-block;flex:none}
+  /* 调色板：每个色样是一颗带发丝边与内高光的圆片，与排版设置里的色块同一形态 */
+  .th-swatches{display:flex;flex-wrap:wrap;gap:12px 18px;padding:14px 20px 4px}
+  .th-swatch{display:flex;align-items:center;gap:8px;font-size:var(--fs-cap);color:var(--ink2)}
+  .th-swatch i{width:20px;height:20px;border-radius:var(--m-r);border:1px solid var(--fg-line);display:inline-block;flex:none;box-shadow:inset 0 1px 0 color-mix(in oklch,var(--surface) 40%,transparent),0 1px 2px color-mix(in oklch,var(--fg) 12%,transparent)}
+  .th-swatch .hex{color:var(--muted);font-size:var(--fs-cap);font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .th-font{padding:6px 20px 16px;font-size:var(--fs-body);color:var(--muted);line-height:1.75}
+  /* 侧栏导航：选中态是校验蓝（它是控件状态，不是装饰，不占强调预算） */
+  .subnav{padding:0 10px 10px;display:flex;flex-direction:column;gap:2px}
+  /* 导航项：选中态 = 白面浮起 + 左侧蓝色键。
+     那条 2px 的蓝是位置标记，比整块浅蓝底更克制，也更好扫读。 */
+  .subnav button{position:relative;display:flex;align-items:center;gap:10px;width:100%;min-height:38px;text-align:left;background:none;border:1px solid transparent;border-radius:var(--radius-sm);padding:8px 11px;font-size:var(--fs-body);color:var(--muted);cursor:pointer;transition:background var(--t-fast) var(--ease),color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease),transform 90ms var(--ease)}
+  .subnav button svg{flex:none;opacity:.8;transition:opacity var(--t-fast) var(--ease)}
+  .subnav button:hover{background:var(--fg-soft);color:var(--fg)}
+  .subnav button:hover svg{opacity:1}
+  .subnav button:active{transform:scale(.985)}
+  .subnav button.active{background:var(--plane-2);border-color:var(--line);color:var(--fg);font-weight:600;box-shadow:var(--shadow)}
+  .subnav button.active svg{color:var(--accent);opacity:1}
+  .subnav button.active::before{content:'';position:absolute;left:-10px;top:50%;transform:translateY(-50%);width:3px;height:16px;border-radius:0 3px 3px 0;background:var(--accent)}
+  /* 分组小标：全大写等宽 + 宽字距，是全局唯一允许的「眉标」形制，
+     只在看两处用（历史记录 / 弹窗内分组），不滥用。 */
+  .side-label{padding:8px 20px 6px;font-family:var(--mono);font-size:var(--fs-micro);color:var(--muted);font-weight:500;letter-spacing:.14em;text-transform:uppercase}
+  .history{flex:1;overflow:auto;padding:0 10px 14px}
+  .hist-search{width:100%;border:1px solid var(--line2);border-radius:var(--radius-sm);padding:8px 12px;font-size:var(--fs-body);margin-bottom:8px;background:var(--plane-3);color:var(--fg);outline:none;box-shadow:var(--inset-shadow);transition:border-color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease),background var(--t-fast) var(--ease)}
+  .hist-search:hover{border-color:var(--fg-line)}
+  .hist-search:focus{border-color:var(--accent);background:var(--plane-2);box-shadow:0 0 0 3px var(--accent-soft)}
+  .hist-search::placeholder{color:var(--faint)}
+  /* 历史条目：静置态刻意不撞边界（20 张白卡会互相打架），
+     只给指针指向的那条做纵深。 */
+  .hist-item{padding:9px 11px;border-radius:var(--radius-sm);cursor:pointer;border:1px solid transparent;transition:background var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),transform var(--t-fast) var(--ease)}
+  .hist-item:hover{background:var(--plane-2);border-color:var(--line);box-shadow:var(--shadow);transform:translateY(-1px)}
+  .hist-item:active{transform:translateY(0) scale(.99)}
+  .hist-item .h-title{font-size:var(--fs-body);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+  .hist-item .h-meta{font-family:var(--mono);font-size:var(--fs-micro);color:var(--muted);margin-top:3px}
+  /* 页脚：左边是版本号（等宽、降噪），右边是 GitHub 链接。
+     链接的悬停反馈只做颜色，不做位移（底部静止件不动） */
+  .side-foot{padding:11px 18px;border-top:1px solid var(--line2);font-family:var(--mono);font-size:var(--fs-micro);color:var(--muted);letter-spacing:.02em;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .side-foot .gh{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;border-radius:var(--m-r);padding:2px 4px;margin:-2px -4px;transition:color var(--t-fast) var(--ease),background var(--t-fast) var(--ease)}
+  .side-foot .gh:hover{color:var(--fg);background:var(--fg-soft)}
+  .side-foot .gh svg{flex:none}
+
+  /* ---------- 主区 ---------- */
+  .main{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0}
+  /* 顶栏：高频项（撤销/保存/主题/标题/封面/发布组）单行；窄屏时先允许标题收缩，
+     真放不下才整体折行，且折行后的动作组仍靠右 —— 不是靠 margin-left:auto（折行后失效）。 */
+  .topbar{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);flex-wrap:wrap;box-shadow:var(--lift-1)}
+  /* 顶栏右侧动作组：发布是一步不可逆，其它都是复制/校验。
+     给动作组前面加一条发丝线，让「扫到右边的发布」有个明确的视觉锚点。 */
+  .topbar .right{margin-left:auto;display:flex;align-items:center;gap:6px;flex-wrap:nowrap;max-width:100%;padding-left:10px}
+  .topbar .right::before{content:'';align-self:stretch;width:1px;background:var(--line2);margin-right:4px}
+  /* 标题可收缩到最小，让位于动作组；输入框本身 min-width:0 才能被 flex 压缩 */
+  #title{min-width:90px;flex:1 1 140px}
+  /* 封面弹层：入口做成按钮，面板右侧弹出（不是下拉，避免遮住标题）。
+     z-index 要压过「主题管理」的下拉（.theme-box z=30）：两个 details 是兄弟，
+     后来者 coverPanel 只在自身定位有效时才能参与比较，所以容器也要 position+z-index。 */
+  .cover-wrap{position:relative;z-index:40}
+  details#coverPanel>summary{list-style:none}
+  details#coverPanel>summary::-webkit-details-marker{display:none}
+  details#coverPanel[open] .cover-box{display:block}
+  /* 浮层规格（下拉/弹窗通用）：白面压深一档 + 1px 发丝线 + 二级柔影。
+     压深一档是为了不和它盖住的白面完全同色，投影只负责纵深。
+     圆角比入口大一档（18 对 12），同心弧线才有嵌套感。 */
+  .cover-box{position:absolute;right:0;top:calc(100% + 8px);z-index:60;width:280px;padding:10px 12px 12px;
+    background:var(--plane-3);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--lift-2);animation:pop var(--t-base) var(--ease) both}
+  .cover-box .menu-item{padding:7px 9px}
+  /* 封面 URL 输入框：全宽的凹槽（与弹窗内其它输入同一形制） */
+  .cover-box input[type=text]{width:100%;box-sizing:border-box;font-size:var(--fs-cap);padding:7px 10px;border:1px solid var(--line2);border-radius:var(--m-r);background:var(--plane-2);color:var(--fg);outline:none;box-shadow:var(--inset-shadow);transition:border-color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease)}
+  .cover-box input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  /* 封面缩略图：圆角与面板同心，右上角的清除按钮是一颗悬浮的圆片 */
+  #coverThumbWrp{margin-bottom:10px}
+  #coverThumb{border-radius:var(--m-r)}
+  #coverClear{position:absolute;top:-9px;right:-9px;width:22px;height:22px;border-radius:50%;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);display:grid;place-items:center;color:var(--muted);cursor:pointer;padding:0;font-size:13px;line-height:1;transition:color var(--t-fast) var(--ease),transform 90ms var(--ease)}
+  #coverClear:hover{color:var(--err);transform:scale(1.08)}
+
+  /* ── 按钮族：全站唯一的按钮形制 ─────────────────────────────────
+     柔结构里按钮是一颗「饱满的圆角片」：静置时白面 + 发丝线，
+     悬停时浮起（柔影变深）+ 背景压深一档，按下时回到原位（物理按压）。
+     三种实底（墨 / 蓝 / 禁用）共用同一套内高光，看起来是一家人。 */
+  .btn{position:relative;border:1px solid var(--line);background:var(--panel);color:var(--fg);border-radius:var(--radius-sm);padding:7px 12px;min-height:38px;font-size:var(--fs-body);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:7px;box-shadow:0 1px 1px color-mix(in oklch,var(--fg) 3%,transparent);transition:background var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease),box-shadow var(--t-base) var(--ease),transform 90ms var(--ease)}
+  .btn svg,.subnav button svg{flex:none}
+  .btn:hover{border-color:var(--fg-line);background:var(--plane-2);box-shadow:var(--shadow);transform:translateY(-1px)}
+  .btn:active{transform:translateY(0) scale(.985);box-shadow:0 1px 1px color-mix(in oklch,var(--fg) 3%,transparent)}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  /* 禁用是唯一允许降低对比的状态；同时要取消浮起，否则看起来像能点 */
+  .btn:disabled{cursor:not-allowed;pointer-events:none;color:var(--muted);border-color:var(--line);background:var(--panel);box-shadow:none;transform:none}
+  .save-box{width:270px}
+  .save-path{font-size:var(--fs-cap);color:var(--ink2);line-height:1.55;word-break:break-all;max-height:54px;overflow:auto;padding:2px 2px 6px}
+  /* 强调预算：一屏里最多一个实底蓝，它一亮，用户就知道那是不可逆的一步。
+     蓝底也走「渐变 + 内高光 + 投影」三件套，和墨色实底是一套材质。 */
+  .btn.primary{background:linear-gradient(180deg,color-mix(in oklch,var(--accent) 92%,var(--surface)),var(--accent));border-color:var(--accent);color:var(--surface);box-shadow:inset 0 1px 0 color-mix(in oklch,var(--surface) 20%,transparent),0 4px 12px -4px color-mix(in oklch,var(--accent) 40%,transparent)}
+  .btn.primary:hover{background:linear-gradient(180deg,color-mix(in oklch,var(--accent-hover) 94%,var(--surface)),var(--accent-hover));border-color:var(--accent-hover);box-shadow:inset 0 1px 0 color-mix(in oklch,var(--surface) 24%,transparent),0 8px 20px -6px color-mix(in oklch,var(--accent) 48%,transparent);transform:translateY(-1px)}
+  .btn.primary:disabled{background:color-mix(in oklch,var(--accent) 34%,var(--surface));border-color:transparent;color:var(--surface);box-shadow:none;transform:none}
+  /* 编辑动作交墨色：新建、保存、复制、导入导出一律墨色或描边 */
+  .btn.ink{background:linear-gradient(180deg,color-mix(in oklch,var(--fg) 88%,var(--surface)),var(--fg));border-color:var(--fg);color:var(--surface);font-weight:600;box-shadow:inset 0 1px 0 color-mix(in oklch,var(--surface) 18%,transparent),0 3px 10px -4px color-mix(in oklch,var(--fg) 40%,transparent)}
+  .btn.ink:hover{background:linear-gradient(180deg,color-mix(in oklch,var(--fg-hover) 90%,var(--surface)),var(--fg-hover));border-color:var(--fg-hover);transform:translateY(-1px)}
+  /* .btn.ink 与 .btn:disabled 同权重，后者写在前会被盖掉——
+     结果是禁用态仍渲染成实底墨色，看起来可点。所以禁用态必须单独再写一次。
+     比例与 .btn.primary:disabled 一致（34%），两种实底禁用态看起来是一套。
+     混色对象用 --bg 而不是 --surface：--bg 的色相 250 与墨的 255 接近，
+     插值不会跑出怪色相（--surface 是无彩色，会走另一条插值路径）。 */
+  .btn.ink:disabled{background:color-mix(in oklch,var(--fg) 34%,var(--bg));border-color:transparent;color:var(--surface);box-shadow:none;transform:none}
+  .btn.ghost{border-color:transparent;background:none;color:var(--muted);box-shadow:none}
+  .btn.ghost:hover{background:var(--fg-soft);color:var(--fg);box-shadow:none;border-color:transparent}
+  .btn.ghost:disabled{background:none}
+  .grow{flex:1}
+  .topbar .lbl{font-size:var(--fs-body);color:var(--muted)}
+  /* 输入控件：默认是一颗「白底浮起片」，聚焦时先浮起再上焦环——
+     柔结构的焦点是「被拿起来的」，不是「被圈出来的」。 */
+  select,input[type=text]{border:1px solid var(--line);border-radius:var(--radius-sm);padding:8px 11px;font-size:var(--fs-body);background:var(--plane-2);color:var(--fg);outline:none;box-shadow:0 1px 2px color-mix(in oklch,var(--fg) 3%,transparent);transition:border-color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease),background var(--t-fast) var(--ease)}
+  select:hover,input[type=text]:hover{border-color:var(--fg-line);background:var(--plane-2)}
+  select:focus,input:focus{border-color:var(--accent);background:var(--plane-2);box-shadow:0 0 0 3px var(--accent-soft)}
+  input#title{width:170px;font-weight:500}
+
+  /* ── 自绘主题选择器（.tsel）──────────────────────────────────────
+     原生 select 的弹层是系统绘的，无法定制，一直是全页最「裸」的控件。
+     这里双层：隐藏 select 存事实，自绘层只管展示与点击。
+     弹层用与其它浮层同一套规格（plane-3 + 发丝线 + lift-2 + pop 入场）。 */
+  .tsel{position:relative}
+  .tsel-btn{display:inline-flex;align-items:center;gap:8px;min-height:38px;max-width:190px;padding:7px 11px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--plane-2);color:var(--fg);font-size:var(--fs-body);cursor:pointer;box-shadow:0 1px 1px color-mix(in oklch,var(--fg) 3%,transparent);transition:border-color var(--t-fast) var(--ease),background var(--t-fast) var(--ease),box-shadow var(--t-base) var(--ease),transform 90ms var(--ease)}
+  .tsel-btn:hover{border-color:var(--fg-line);transform:translateY(-1px);box-shadow:var(--shadow)}
+  .tsel-btn:active{transform:translateY(0) scale(.985)}
+  .tsel-btn[aria-expanded="true"]{border-color:var(--accent-line);background:var(--plane-2);box-shadow:0 0 0 3px var(--accent-soft)}
+  .tsel-btn>span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+  .tsel-btn svg{flex:none;color:var(--muted);transition:transform var(--t-fast) var(--ease)}
+  .tsel-btn[aria-expanded="true"] svg{transform:rotate(180deg);color:var(--accent)}
+  .tsel-pop{position:absolute;left:0;top:calc(100% + 8px);z-index:50;width:240px;max-height:min(420px,70vh);overflow:auto;background:var(--plane-3);border:1px solid var(--line);border-radius:var(--radius);padding:6px;box-shadow:var(--lift-2);display:none}
+  .tsel-pop.show{display:block;animation:pop var(--t-base) var(--ease) both}
+  .tsel-group{padding:8px 8px 4px;font-family:var(--mono);font-size:var(--fs-micro);font-weight:500;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;font-variant-numeric:tabular-nums}
+  .tsel-opt{display:flex;align-items:center;gap:8px;width:100%;min-height:34px;padding:6px 10px;border:1px solid transparent;background:none;border-radius:var(--radius-sm);color:var(--fg);font-size:var(--fs-body);text-align:left;cursor:pointer;transition:background var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease)}
+  .tsel-opt:hover{background:var(--plane-2);box-shadow:var(--shadow)}
+  .tsel-opt.on{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent);font-weight:600}
+  .tsel-opt .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tsel-opt .tick{flex:none;width:14px;height:14px;color:var(--accent)}
+  .tsel-opt:not(.on) .tick{visibility:hidden}
+  details.theme-panel{position:relative}
+  details.theme-panel summary{cursor:pointer;display:flex;align-items:center;gap:7px;min-height:38px;padding:7px 12px;font-size:var(--fs-body);border:1px solid var(--line);border-radius:var(--radius-sm);color:var(--muted);background:var(--panel);box-shadow:0 1px 1px color-mix(in oklch,var(--fg) 3%,transparent);transition:border-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease),background var(--t-fast) var(--ease),box-shadow var(--t-base) var(--ease),transform 90ms var(--ease)}
+  details.theme-panel summary:hover{border-color:var(--fg-line);color:var(--fg);transform:translateY(-1px);box-shadow:var(--shadow)}
+  details.theme-panel[open] summary{border-color:var(--fg-line);color:var(--fg);background:var(--plane-2);box-shadow:var(--shadow);transform:none}
+  /* 弹层规格（与 cover-box 同一套）：白面压深一档 + 发丝线 + 二级柔影 + 入场动画。
+     面板内容比视口高时整层滚动；粘底动作条（.tp-foot）跟著滚动容器定住。 */
+  .theme-box{position:absolute;right:0;top:calc(100% + 8px);background:var(--plane-3);border:1px solid var(--line);border-radius:var(--radius);padding:10px;width:328px;max-height:calc(100vh - 120px);overflow:auto;z-index:30;box-shadow:var(--lift-2);animation:pop var(--t-base) var(--ease) both}
+  .theme-box h4{margin:12px 4px 7px;font-family:var(--mono);font-size:var(--fs-micro);font-weight:500;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .theme-box h4::after{content:'';flex:1;height:1px;background:var(--line2)}
+  .theme-box .menu-items{display:flex;flex-direction:column;gap:2px}
+  /* 菜单项：图标住进一颗 26px 的凹槽方块里，悬停时图标从次级墨变蓝——
+     这是「按钮里的按钮」，柔结构的 double-bezel 手法。 */
+  .theme-box .menu-item{display:flex;align-items:center;gap:10px;width:100%;min-height:38px;padding:5px 8px;border:1px solid transparent;background:none;border-radius:var(--radius-sm);color:var(--fg);font-size:var(--fs-body);text-align:left;cursor:pointer;transition:background var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),transform 90ms var(--ease)}
+  .theme-box .menu-item:hover{background:var(--plane-2);border-color:var(--line);box-shadow:var(--shadow)}
+  .theme-box .menu-item:active{transform:scale(.985)}
+  .theme-box .menu-item:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .theme-box .menu-item svg{flex:none;color:var(--muted);width:15px;height:15px;transition:color var(--t-fast) var(--ease)}
+  .theme-box .menu-item:hover svg{color:var(--accent)}
+  /* 菜单项右侧的短说明：次级墨、右对齐，让「这项会做什么」不用靠 title 提示猜 */
+  .theme-box .mi-hint{margin-left:auto;font-size:var(--fs-micro);color:var(--muted);letter-spacing:.02em;white-space:nowrap}
+  .theme-box .menu-item:hover .mi-hint{color:var(--ink2)}
+  .theme-box .menu-sep{height:1px;background:var(--line2);margin:10px 2px}
+
+  /* ── 排版设置：分节卡片 ─────────────────────────────────────────
+     原来是 8 行输入控在 260px 里排成一列，每行一个控件、无分组，
+     读起来像表单垃圾场。现在按「字体 / 字阶 / 颜色」分三节，
+     每节是一张内嵌白卡（白面压深一档 + 发丝线），节内有自己的节奏。 */
+  .tp-card{background:var(--plane-2);border:1px solid var(--line);border-radius:var(--radius-sm);padding:10px 12px;box-shadow:0 1px 2px color-mix(in oklch,var(--fg) 3%,transparent)}
+  .tp-card+.tp-card{margin-top:8px}
+  .tp-row{display:flex;align-items:center;gap:9px;margin:7px 0;min-height:26px}
+  .tp-row:first-child{margin-top:2px}
+  .tp-row:last-child{margin-bottom:2px}
+  .tp-row>label{flex:none;width:52px;font-size:var(--fs-cap);color:var(--muted)}
+  .tp-row>select,.tp-row>input[type=text]{flex:1;min-width:0;font-size:var(--fs-cap);padding:5px 8px;border:1px solid var(--line2);border-radius:var(--m-r);background:var(--plane-2);color:var(--fg);box-shadow:var(--inset-shadow)}
+  .tp-row>select:focus,.tp-row>input[type=text]:focus{border-color:var(--accent);background:var(--plane-2);box-shadow:0 0 0 3px var(--accent-soft)}
+
+  /* 滑杆：原生 range 是全页最粗的元件。这里重画轨道和拇指——
+     轨道是一条 3px 的凹槽线，拇指是 14px 白圆片带发丝边 + 微影，
+     填充段用 accent（accent-color 会同时改 thumb 色，必须显式覆盖）。 */
+  .tp-row>input[type=range]{flex:1;min-width:0;appearance:none;-webkit-appearance:none;height:14px;background:none;accent-color:var(--accent);cursor:pointer}
+  .tp-row>input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:999px;background:linear-gradient(90deg,var(--accent) var(--fill,50%),var(--line) var(--fill,50%))}
+  .tp-row>input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;margin-top:-5px;border-radius:50%;background:var(--surface);border:1px solid var(--fg-line);box-shadow:0 1px 2px color-mix(in oklch,var(--fg) 25%,transparent);transition:transform 90ms var(--ease)}
+  .tp-row>input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.12)}
+  .tp-row>input[type=range]:active::-webkit-slider-thumb{transform:scale(1.2);border-color:var(--accent)}
+  .tp-row>input[type=range]::-moz-range-track{height:3px;border-radius:999px;background:var(--line)}
+  .tp-row>input[type=range]::-moz-range-progress{height:3px;border-radius:999px;background:var(--accent)}
+  .tp-row>input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--surface);border:1px solid var(--fg-line);box-shadow:0 1px 2px color-mix(in oklch,var(--fg) 25%,transparent)}
+
+  /* 色块行：swatch 是一颗带发丝边与内高光的圆片，hex 用等宽字体,
+     跟在设计工具里的取色器同一形态，一眼知道这是「可改的颜色」而不是装饰 */
+  .tp-row>input[type=color]{appearance:none;-webkit-appearance:none;width:34px;height:24px;padding:0;border:1px solid var(--fg-line);border-radius:var(--m-r);background:none;cursor:pointer;box-shadow:inset 0 1px 0 color-mix(in oklch,var(--surface) 40%,transparent),0 1px 2px color-mix(in oklch,var(--fg) 12%,transparent)}
+  .tp-row>input[type=color]::-webkit-color-swatch-wrapper{padding:2px}
+  .tp-row>input[type=color]::-webkit-color-swatch{border:none;border-radius:calc(var(--m-r) - 2px)}
+  .tp-row>code{font-family:var(--mono);font-size:var(--fs-micro);color:var(--ink2);min-width:58px;text-align:right;font-variant-numeric:tabular-nums}
+  .tp-row .btn{flex:none;min-height:0;padding:3px 9px;font-size:var(--fs-cap);border-radius:var(--m-r)}
+  .tp-hint{font-size:var(--fs-cap);line-height:1.6;color:var(--muted);margin:9px 4px 2px;padding:8px 10px;background:var(--plane-3);border:1px solid var(--line2);border-left:2px solid var(--warn);border-radius:var(--m-r)}
+  .tp-hint b{color:var(--warn)}
+  /* 状态提示（未修改 / 已改 N 项）：不是另一条警告，而是「结果回执」，
+     所以不带左边的警示条，底色用白面浮起，文案里的关键数字用蓝 */
+  .tp-hint.tp-state{border-left:0;background:var(--plane-2);color:var(--ink2)}
+  .tp-dirty{color:var(--accent)}
+  /* 面板底部动作条：粘在浮层底部，滚动时也在 —— 两颗按钮是这节的「终点」 */
+  .tp-foot{position:sticky;bottom:-10px;margin:10px -10px -10px;padding:10px 12px;background:var(--plane-3);border-top:1px solid var(--line2);border-radius:0 0 calc(var(--radius) - 1px) calc(var(--radius) - 1px);display:flex;gap:8px}
+  .tp-foot .btn{flex:1;justify-content:center}
+  .tp-actions{display:flex;gap:8px;margin-top:10px}
+  .tp-actions .btn{flex:1;justify-content:center}
+  /* 已保存主题：从「• 名字」的文本列表升级成行卡片，
+     色点 + 名字 + 当前主题标记，点击即切换（不用再去顶部下拉找） */
+  .tp-themes{display:flex;flex-direction:column;gap:2px;padding:0 2px}
+  .tp-theme{display:flex;align-items:center;gap:9px;width:100%;min-height:36px;padding:6px 9px;border:1px solid transparent;background:none;border-radius:var(--radius-sm);color:var(--fg);font-size:var(--fs-body);text-align:left;cursor:pointer;transition:background var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease)}
+  .tp-theme:hover{background:var(--plane-2);border-color:var(--line);box-shadow:var(--shadow)}
+  .tp-theme.on{border-color:var(--accent-line);background:var(--accent-soft)}
+  .tp-theme .sw{display:flex;gap:3px;flex:none}
+  .tp-theme .sw i{width:10px;height:10px;border-radius:50%;border:1px solid color-mix(in oklch,var(--fg) 14%,transparent);display:block}
+  .tp-theme .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tp-theme .cur{font-family:var(--mono);font-size:var(--fs-micro);color:var(--accent);letter-spacing:.06em}
+  .tp-empty{font-size:var(--fs-cap);color:var(--muted);padding:8px 10px;line-height:1.6}
+
+  /* ---------- 内容区 ---------- */
+  .content{flex:1;display:flex;gap:14px;min-height:0}
+  /* 三栏尺寸不动：中栏与右栏各占一半，画布恒定 390px。
+     两块面板都是「白卡浮在纸底上」：发丝线定边界 + 一级柔影定纵深。 */
+  .editor-pane{width:50%;min-width:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);overflow:hidden;box-shadow:var(--lift-1)}
+  .preview-pane{width:50%;min-width:0;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);overflow:hidden;box-shadow:var(--lift-1)}
+  .pane-toolbar{display:flex;align-items:center;gap:2px;padding:8px 10px;border-bottom:1px solid var(--line2);background:var(--panel);flex-wrap:wrap}
+  .tb-btn{width:34px;height:34px;border:1px solid transparent;border-radius:var(--m-r);background:none;color:var(--muted);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background var(--t-fast) var(--ease),color var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease),transform 90ms var(--ease)}
+  .tb-btn:hover{background:var(--plane-2);color:var(--fg);border-color:var(--line);box-shadow:0 1px 2px color-mix(in oklch,var(--fg) 7%,transparent)}
+  .tb-btn:active{transform:scale(.94)}
+  .tb-btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .tb-btn.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line)}
+  .tb-btn b,.tb-btn i,.tb-btn s,.tb-btn span{font-weight:600;font-size:13px;font-variant-numeric:tabular-nums}
+  .tb-btn svg{display:block;margin:auto}
+  /* 上标/下标：.tb-btn 是 flex 容器，sup/sub 会被 blockify 吃掉 vertical-align（见 AGENTS.md §4.6），
+     所以标记里包了一层 span 还原行内上下文；但 sup/sub 默认还会把行盒撑高，
+     导致「x²」与「x₂」的 x 不在同一水平线（实测差 2.83px）。
+     line-height:0 让它们不参与行盒高度计算，两份标签的 x 基线就对齐了（实测 0px）。 */
+  .tb-btn sup,.tb-btn sub{line-height:0}
+  /* Typora 式表格大小选择器 */
+  .table-picker{position:fixed;z-index:70;background:var(--plane-3);border:1px solid var(--line);border-radius:var(--radius);padding:12px 13px;display:none;box-shadow:var(--lift-2);animation:pop var(--t-base) var(--ease) both}
+  .table-picker .tlabel{font-size:var(--fs-cap);color:var(--ink2);margin-bottom:10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
+  .table-picker .tgrid{display:grid;grid-template-columns:repeat(10,17px);grid-auto-rows:17px;gap:3px}
+  .table-picker .tcell{background:var(--plane-4);border-radius:4px;cursor:pointer;transition:background 80ms var(--ease),transform 80ms var(--ease)}
+  .table-picker .tcell.on{background:var(--accent)}
+  .table-picker .tcell:hover{background:var(--accent);transform:scale(1.08)}
+  .tm-picker{position:fixed;z-index:70;background:var(--plane-3);border:1px solid var(--line);border-radius:var(--radius);padding:6px;display:none;min-width:200px;max-height:62vh;overflow:auto;box-shadow:var(--lift-2);animation:pop var(--t-base) var(--ease) both}
+  .tm-head{padding:8px 10px 5px;font-family:var(--mono);font-size:var(--fs-micro);font-weight:500;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+  .tm-opt .tm-sub{margin-left:auto;font-size:var(--fs-cap);color:var(--muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tm-opt .tm-del{margin-left:6px;border:0;background:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:0 5px;border-radius:5px;transition:color var(--t-fast) var(--ease),background var(--t-fast) var(--ease)}
+  .tm-opt:hover .tm-del{color:var(--err);background:var(--fg-soft)}
+  .tm-opt{display:flex;align-items:center;gap:8px;width:100%;min-height:38px;padding:8px 11px;border:1px solid transparent;background:none;border-radius:var(--radius-sm);color:var(--fg);font-size:var(--fs-body);text-align:left;cursor:pointer;transition:background var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease)}
+  .tm-opt:hover{background:var(--plane-2);box-shadow:var(--shadow)}
+  .tb-sep{width:1px;height:20px;background:var(--line);margin:0 5px;align-self:center}
+  /* Markdown 源：等宽 12.5px / 行高 1.85（与视觉体系一致），最小高度 340px 由 flex 撑开。
+     纸面微压一档（--plane-3）：编辑区是「纸上写字」而不是「白屏输入」。 */
+  .markdown{flex:1;width:100%;border:0;resize:none;padding:20px 24px;font:var(--fs-body)/1.85 var(--mono);background:var(--surface);color:var(--fg);outline:none;tab-size:2}
+  .markdown::placeholder{color:var(--muted)}
+  .markdown:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;border-radius:0}
+  .ed-status{display:flex;gap:16px;padding:9px 16px;border-top:1px solid var(--line2);font-family:var(--mono);font-size:var(--fs-cap);color:var(--muted);background:var(--plane-3);font-variant-numeric:tabular-nums}
+  .ed-status .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:6px;vertical-align:middle}
+  .ed-status .dot.busy{background:var(--warn)}
+  /* 预览页头：标签页做成「下划线式」分段控件——
+     选中项下压一条 2px 蓝线，比填充底更轻，也和侧栏导航的左键一致。 */
+  .preview-head{display:flex;align-items:center;gap:4px;padding:7px 10px;border-bottom:1px solid var(--line2);font-size:var(--fs-body);color:var(--ink2);background:var(--panel);flex-wrap:wrap}
+  .preview-head .tab{position:relative;display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px;border-radius:var(--m-r);border:1px solid transparent;cursor:pointer;transition:background var(--t-fast) var(--ease),color var(--t-fast) var(--ease)}
+  .preview-head .tab:hover{background:var(--fg-soft);color:var(--fg)}
+  .preview-head .tab.active{background:var(--plane-2);color:var(--fg);border-color:var(--line);font-weight:600;box-shadow:0 1px 2px color-mix(in oklch,var(--fg) 5%,transparent)}
+  .preview-head button.tab{border:0;background:none;font:inherit;color:inherit;line-height:1.4;cursor:pointer}
+  .preview-head button.tab:hover{color:var(--fg)}
+  .preview-head button.tab[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line);font-weight:600}
+  .preview-head .w{font-family:var(--mono);font-size:var(--fs-cap);color:var(--muted);font-variant-numeric:tabular-nums}
+  /* 画布：它是纸，不是卡片。宽度恒为 390px，不被“适配”成百分比。
+     纸外的底板压深一档（让 390px 白纸自己站住），纸本身带发丝边 + 微影。 */
+  .preview-wrap{flex:1;overflow:auto;background:var(--plane-3);padding:22px;display:flex;justify-content:center;box-shadow:inset 0 1px 3px color-mix(in oklch,var(--fg) 4%,transparent)}
+  iframe.preview{width:390px;min-height:100%;border:1px solid var(--border);background:var(--surface);border-radius:var(--radius-sm);align-self:flex-start;box-shadow:var(--shadow)}
+  /* 校验条：三档状态胶囊。颜色只负责快速扫读，判定的词必须写在里面（色盲与黑白打印都读得出来）。
+     底板压深一档，让胶囊的浅色底不至于和面板同色。 */
+  .val-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 14px;border-top:1px solid var(--line2);font-size:var(--fs-cap);color:var(--muted);background:var(--plane-3);max-height:132px;overflow:auto}
+  .val-bar .v{padding:3px 10px;border-radius:999px;border:1px solid var(--border);display:inline-flex;align-items:baseline;gap:6px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .val-bar .v b{font-weight:600;flex:none}
+  /* 详情胶囊可能很长：允许内部折行而不撑破胶囊 */
+  .val-bar .v.wrap{white-space:normal;max-width:100%;line-height:1.5}
+  .val-bar .v.ok{color:var(--ok);border-color:color-mix(in oklch,var(--ok) 34%,transparent);background:color-mix(in oklch,var(--ok) 8%,var(--surface))}
+  .val-bar .v.warn{color:var(--warn);border-color:color-mix(in oklch,var(--warn) 34%,transparent);background:color-mix(in oklch,var(--warn) 8%,var(--surface))}
+  .val-bar .v.err{color:var(--err);border-color:color-mix(in oklch,var(--err) 34%,transparent);background:color-mix(in oklch,var(--err) 8%,var(--surface))}
+  .val-bar .v.plain{color:var(--muted)}
+  .val-bar .grow{flex:1}
+  /* 诊断条数多时的折叠开关 */
+  .val-bar .more{flex:none;min-height:24px;padding:2px 10px;border-radius:999px;border:1px solid var(--border);background:var(--panel);color:var(--muted);font:inherit;font-family:var(--mono);cursor:pointer}
+  .val-bar .more:hover{border-color:var(--fg);color:var(--fg)}
+  .val-bar .ok{color:var(--ok)} .val-bar .err{color:var(--err)} .val-bar .warn{color:var(--warn)}
+  /* toast 是深色材质，用同一个深色，不再有第二种黑。
+     出场是「从底下浮上来」，比闪现多一层物理感（时间用 --t-base）。 */
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--dark);color:var(--dark-fg);padding:11px 18px;border-radius:999px;font-size:var(--fs-body);opacity:0;transition:opacity var(--t-base) var(--ease),transform var(--t-base) var(--ease);pointer-events:none;z-index:60;display:flex;align-items:center;gap:9px;max-width:min(520px,92vw);box-shadow:0 12px 32px -8px color-mix(in oklch,var(--dark) 55%,transparent)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast i{width:7px;height:7px;border-radius:50%;background:var(--dark-accent);flex:none}
+  .toast.err i{background:color-mix(in oklch,var(--err) 70%,var(--dark-fg))}
+  /* 空态：不是一个灰句子，而是一组「图标 + 主句 + 提示」。
+     图标住在凹槽圆盘里，主句用正文色，提示用次级墨，两行不等权。 */
+  .empty{color:var(--muted);padding:36px 24px;text-align:center;font-size:var(--fs-body);display:flex;flex-direction:column;align-items:center;gap:6px}
+  .empty .e-ico{width:44px;height:44px;border-radius:50%;background:var(--plane-3);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;color:var(--muted);margin-bottom:6px;box-shadow:var(--inset-shadow)}
+  .empty b{color:var(--ink2);font-weight:600;font-size:var(--fs-body)}
+  /* 设置弹窗 */
+  /* 遮罩：压暗 + 一次轻模糊。模糊只用在 fixed 遮罩上（不进滚动容器），
+     这是把「弹窗浮在所有内容之上」变成物理事实的最便宜手段。 */
+  .overlay{position:fixed;inset:0;background:color-mix(in oklch,var(--fg) 30%,transparent);backdrop-filter:blur(4px) saturate(120%);-webkit-backdrop-filter:blur(4px) saturate(120%);display:none;align-items:center;justify-content:center;z-index:80}
+  .overlay.show{display:flex}
+  .overlay.show .modal{animation:sheet var(--t-slow) var(--ease) both}
+  /* 弹窗外壳（Double-Bezel 的外层）：不再是一块白底描边，
+     而是「白面 + 1px 发丝线 + 三级柔影」，圆角比内容大一档。 */
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);width:440px;max-width:92vw;overflow:hidden;box-shadow:var(--lift-3)}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line2);background:var(--panel)}
+  .modal-head b{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
+  .modal-head .sub{display:block;font-size:var(--fs-cap);color:var(--muted);font-weight:400;margin-top:3px;letter-spacing:0}
+  .modal-close{border:1px solid transparent;background:none;color:var(--muted);cursor:pointer;border-radius:50%;width:30px;height:30px;display:grid;place-items:center;line-height:1;flex:none;transition:background var(--t-fast) var(--ease),color var(--t-fast) var(--ease),transform 90ms var(--ease)}
+  .modal-close:hover{background:var(--fg-soft);color:var(--fg);transform:rotate(90deg)}
+  .modal-close:active{transform:rotate(90deg) scale(.92)}
+  .modal-close:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .modal-body{padding:18px 20px;max-height:60vh;overflow:auto}
+  .set-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line2)}
+  .set-row:last-child{border-bottom:0}
+  .set-row .s-txt{flex:1}
+  .set-row .s-txt b{font-size:var(--fs-body);display:block;letter-spacing:0}
+  .set-row .s-txt small{color:var(--muted);font-size:var(--fs-cap);line-height:1.6;display:block;margin-top:3px}
+  .set-row .s-txt code{font-family:var(--mono);font-size:var(--fs-cap);background:var(--plane-3);border:1px solid var(--line2);border-radius:4px;padding:0 4px}
+  /* 开关：轨道是一颗凹槽，拇指带发丝边 + 微影（和滑杆的拇指是同一套） */
+  .switch{position:relative;width:42px;height:24px;flex:none}
+  .switch input{opacity:0;width:0;height:0}
+  .slider{position:absolute;inset:0;background:var(--plane-4);border:1px solid var(--line2);border-radius:999px;box-shadow:var(--inset-shadow);transition:background var(--t-base) var(--ease),border-color var(--t-base) var(--ease),box-shadow var(--t-base) var(--ease)}
+  .slider:before{content:'';position:absolute;width:16px;height:16px;background:var(--surface);border-radius:50%;top:3px;left:3px;box-shadow:0 1px 2px color-mix(in oklch,var(--fg) 25%,transparent);transition:transform var(--t-base) var(--ease)}
+  .switch input:checked + .slider{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 1px 2px color-mix(in oklch,var(--accent) 40%,transparent)}
+  .switch input:checked + .slider:before{transform:translateX(18px)}
+  .switch input:focus-visible + .slider{outline:2px solid var(--accent);outline-offset:2px}
+  .modal-foot{display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:13px 20px;border-top:1px solid var(--line2);background:var(--plane-3)}
+  /* 弹窗内的裸输入框（视频弹窗的三连）：统一成凹槽，垂直堆叠、间距 8px */
+  .modal-body>input[type=text],.modal-body>input:not([type]),.v-fields input{width:100%;box-sizing:border-box;border:1px solid var(--line2);border-radius:var(--radius-sm);padding:9px 12px;font-size:var(--fs-body);background:var(--plane-3);color:var(--fg);outline:none;box-shadow:var(--inset-shadow);transition:border-color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease),background var(--t-fast) var(--ease)}
+  .modal-body>input:hover,.v-fields input:hover{border-color:var(--fg-line)}
+  .modal-body>input:focus,.v-fields input:focus{border-color:var(--accent);background:var(--plane-2);box-shadow:0 0 0 3px var(--accent-soft)}
+  .v-fields{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+  /* 「另存为」弹窗：面包屑 + 目录列表 + 新建文件夹行 */
+  .sa-crumbs{display:flex;align-items:center;gap:2px;flex-wrap:wrap;margin:6px 0 8px;font-size:var(--fs-cap);color:var(--muted)}
+  .sa-crumbs button{border:none;background:none;color:var(--accent);cursor:pointer;font:inherit;padding:2px 6px;border-radius:6px}
+  .sa-crumbs button:hover{background:var(--accent-soft);color:var(--accent)}
+  .sa-crumbs .sa-sep{color:var(--muted);opacity:.6;user-select:none}
+  .sa-crumbs .sa-here{color:var(--fg);font-weight:600;padding:2px 6px}
+  .sa-list{border:1px solid var(--line2);border-radius:var(--radius-sm);background:var(--plane-3);box-shadow:var(--inset-shadow);max-height:200px;overflow:auto;margin-bottom:10px}
+  .sa-row{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;border:none;background:none;color:var(--fg);font:inherit;font-size:var(--fs-body);text-align:left;padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--line2);transition:background var(--t-fast) var(--ease)}
+  .sa-row:last-child{border-bottom:0}
+  .sa-row:hover{background:var(--plane-2)}
+  .sa-row svg{flex:none;color:var(--muted)}
+  .sa-row.sa-dir svg{color:var(--accent)}
+  .sa-row .sa-file-hint{margin-left:auto;font-size:var(--fs-micro);color:var(--muted);white-space:nowrap}
+  .sa-row.sa-file{cursor:default}
+  .sa-row.sa-file:hover{background:none}
+  .sa-row.sa-file.sa-pick:hover{background:var(--plane-2);cursor:pointer}
+  .sa-row.sa-file.sa-pick svg{color:var(--accent)}
+  .sa-empty{padding:14px 12px;font-size:var(--fs-cap);color:var(--muted);text-align:center}
+  .sa-newdir{display:flex;gap:8px}
+  .sa-newdir input{flex:1;width:100%;box-sizing:border-box;border:1px solid var(--line2);border-radius:var(--radius-sm);padding:8px 12px;font-size:var(--fs-body);background:var(--plane-3);color:var(--fg);outline:none;box-shadow:var(--inset-shadow);transition:border-color var(--t-fast) var(--ease),background var(--t-fast) var(--ease)}
+  .sa-newdir input:focus{border-color:var(--accent);background:var(--plane-2)}
+  /* 原生 file 按钮：浏览器默认的是一颗灰蓝胶囊，与全站按钮形制不符，
+     这里用 ::file-selector-button 拉齐到 .btn 的静置态 */
+  input[type=file]::file-selector-button{font:inherit;font-size:var(--fs-body);border:1px solid var(--line);background:var(--plane-2);color:var(--fg);border-radius:var(--radius-sm);padding:7px 12px;min-height:34px;cursor:pointer;margin-right:10px;transition:background var(--t-fast) var(--ease),border-color var(--t-fast) var(--ease)}
+  input[type=file]::file-selector-button:hover{border-color:var(--fg-line);background:var(--plane-3)}
+  .ai-lbl{display:block;font-size:var(--fs-cap);color:var(--muted);margin:0 0 6px;letter-spacing:.02em}
+  .ai-scope{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line2)}
+  .ai-chips{display:flex;gap:8px;flex-wrap:wrap}
+  .ai-chip{display:flex;align-items:center;gap:7px;padding:7px 13px;border:1px solid var(--line);border-radius:999px;font-size:var(--fs-body);cursor:pointer;color:var(--ink2);transition:border-color var(--t-fast) var(--ease),color var(--t-fast) var(--ease),background var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease)}
+  .ai-chip input{accent-color:var(--accent);cursor:pointer}
+  .ai-chip:hover{border-color:var(--fg-line);color:var(--fg);background:var(--plane-3)}
+  .ai-chip:has(input:checked){border-color:var(--accent-line);color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 1px 0 color-mix(in oklch,var(--surface) 40%,transparent)}
+  .ai-selinfo{font-family:var(--mono);font-size:var(--fs-cap);color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums}
+  .ai-prompt{width:100%;box-sizing:border-box;border:1px solid var(--line2);border-radius:var(--radius-sm);padding:11px 13px;font-size:var(--fs-body);font-family:inherit;line-height:1.65;resize:vertical;min-height:84px;background:var(--plane-3);color:var(--fg);outline:none;box-shadow:var(--inset-shadow);transition:border-color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease),background var(--t-fast) var(--ease)}
+  .ai-prompt:hover{border-color:var(--fg-line)}
+  .ai-prompt:focus{border-color:var(--accent);background:var(--plane-2);box-shadow:0 0 0 3px var(--accent-soft)}
+  .ai-hint{font-size:var(--fs-cap);color:var(--muted);line-height:1.65;margin-top:10px}
+  /* 快捷键设置弹窗 · 等宽键帽、发丝线分行 */
+  .key-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line2);transition:background var(--t-fast) var(--ease)}
+  .key-row:last-of-type{border-bottom:0}
+  .key-row:hover{background:var(--fg-soft);border-radius:var(--m-r)}
+  .key-name{flex:1;font-size:var(--fs-body);color:var(--ink);display:flex;align-items:center;gap:8px}
+  .key-name small{color:var(--muted);font-size:var(--fs-cap)}
+  /* 键帽：真正的键帽形态——凹槽底 + 等宽字 + 底部一条更深的发丝线（键帽厚度） */
+  .key-combo{width:156px;flex:none;padding:7px 10px;border:1px solid var(--line2);border-bottom-width:2px;border-radius:var(--m-r);font:var(--fs-body) var(--mono);background:var(--plane-3);color:var(--fg);text-align:center;cursor:pointer;transition:border-color var(--t-fast) var(--ease),box-shadow var(--t-fast) var(--ease),background var(--t-fast) var(--ease);outline:none;box-sizing:border-box}
+  .key-combo:hover{border-color:var(--fg-line)}
+  .key-combo:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .key-combo.recording{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+  .key-combo::placeholder{color:var(--muted);font-family:var(--mono)}
+  .key-clear{flex:none;border:1px solid transparent;background:none;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;padding:4px;border-radius:var(--m-r);width:24px;height:24px;display:grid;place-items:center;transition:color var(--t-fast) var(--ease),background var(--t-fast) var(--ease)}
+  .key-clear:hover{color:var(--err);background:var(--fg-soft)}
+  .key-dup{color:var(--err);font-size:11px;margin-left:4px}
+  .key-hint{font-size:var(--fs-cap);color:var(--muted);line-height:1.65;margin-top:10px}
+  .key-toolbar{display:flex;gap:8px;align-items:center;margin-top:2px}
+  .key-toolbar .grow{flex:1}
+  .key-empty{color:var(--muted);font-size:var(--fs-body);text-align:center;padding:18px 0}
+  .key-title{font-family:var(--mono);font-size:var(--fs-micro);color:var(--muted);font-weight:500;margin:14px 0 4px;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .key-title::after{content:'';flex:1;height:1px;background:var(--line2)}
+  .key-modal{width:480px;max-width:94vw}
+  /* ---------- 响应式 ---------- */
+  @media (max-width:1024px){
+    .content{flex-direction:column}
+    .editor-pane,.preview-pane{width:100%}
+    .preview-pane{min-height:440px}
+  }
+  @media (max-width:760px){
+    .app{flex-direction:column;height:auto}
+    .sidebar{width:100%;flex:none}
+    .history{max-height:180px}
+    .topbar .right{margin-left:0;flex-wrap:wrap}
+    iframe.preview{width:100%}
+  }
+  /* 关掉动画偏好：只给状态切换的 120–150ms 过渡，动画全取消 */
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important;animation-delay:0ms !important}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- 左侧栏 -->
+  <aside class="sidebar">
+    <div class="side-top">
+      <!-- 品牌标记：校验帧 + 端点。外框 = 恒定的 390px 预览帧 -->
+      <div class="logo" role="img" aria-label="stylewx">
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <rect x="6.5" y="6.5" width="19" height="19" rx="5" fill="none" stroke="currentColor" stroke-width="2.2" opacity=".38"/>
+          <rect x="11" y="12" width="10" height="2.6" rx="1.3" fill="currentColor"/>
+          <rect x="11" y="17.4" width="6" height="2.6" rx="1.3" fill="currentColor" opacity=".55"/>
+          <circle cx="25.5" cy="25.5" r="3.6" fill="currentColor"/>
+        </svg>
+      </div>
+      <div class="side-brand">stylewx<small>排版</small></div>
+    </div>
+    <div class="subnav">
+      <button class="active" id="navTheme"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-.8 2-1.8 0-.9-.7-1.3-.7-2.1 0-.8.7-1.4 1.6-1.4H17a4 4 0 0 0 4-4c0-4.4-4-8.7-9-8.7z"/><circle cx="7.5" cy="11" r="1.1" fill="currentColor"/><circle cx="10.5" cy="7.5" r="1.1" fill="currentColor"/><circle cx="14.5" cy="7.5" r="1.1" fill="currentColor"/><circle cx="17" cy="10.5" r="1.1" fill="currentColor"/></svg>文章主题</button>
+      <button id="navImgHost"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 19a4 4 0 0 1-.6-7.9 6 6 0 0 1 11.4-1.5A4.5 4.5 0 0 1 18 19z"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>图床设置</button>
+      <button id="navAi"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8z"/><path d="M5 15l.7 1.8 1.8.7-1.8.7L5 20l-.7-1.8-1.8-.7 1.8-.7z"/></svg>AI 优化</button>
+      <button id="navComp"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><path d="M17 13v8M13 17h8"/></svg>组件库</button>
+      <button id="navKeys"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="12" rx="2"/><path d="M7 11h.01M11 11h.01M15 11h.01M19 11h.01M7 15h4M14 15h3"/></svg>快捷键设置</button>
+    </div>
+    <button class="new-btn" id="newBtn"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新建文章</button>
+    <div class="side-actions">
+      <button class="side-btn" id="importHtmlBtn" title="导入 HTML（含组件标记时精确还原 ::: 指令）">导入 HTML</button>
+      <button class="side-btn" id="importMdBtn" title="导入本地 Markdown 文件">导入 MD</button>
+      <button class="side-btn" id="exportMdBtn" title="把当前 Markdown 导出为 .md 文件">导出 MD</button>
+    </div>
+    <input type="file" id="htmlFile" accept=".html,.htm,text/html" style="display:none" />
+    <input type="file" id="mdFile" accept=".md,.markdown,.txt,text/markdown" style="display:none" />
+    <div class="side-label">历史记录</div>
+    <div class="history">
+      <input class="hist-search" id="search" placeholder="搜索…" />
+      <div id="histList"></div>
+    </div>
+    <div class="side-foot"><span>stylewx · v{{VERSION}}</span><a class="gh" href="https://github.com/wjunhere/stylewx" target="_blank" rel="noopener noreferrer" title="GitHub 仓库（wjunhere/stylewx）" aria-label="GitHub 仓库"><svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></div>
+  </aside>
+
+  <!-- 主区 -->
+  <div class="main">
+    <div class="topbar">
+      <button class="btn ghost" id="undoBtn" title="撤销" aria-label="撤销"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+      <button class="btn ghost" id="redoBtn" title="重做" aria-label="重做"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+      <details class="theme-panel" id="savePanel"><summary title="保存到文件（Ctrl+S）"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg><span id="saveLabel"></span></summary><div class="theme-box save-box">
+        <h4>当前文件</h4>
+        <div class="save-path" id="filePath" title="">（未关联文件）</div>
+        <div class="menu-items">
+          <button class="menu-item" id="saveFileBtn" title="写回当前文件（Ctrl+S）"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>保存<span class="mi-hint">写回当前文件</span></button>
+          <button class="menu-item" id="saveAsBtn" title="保存为新文件"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></svg>另存为…<span class="mi-hint">选一个新位置</span></button>
+        </div>
+      </div></details>
+      <!-- 主题选择：原生 select 的下拉弹层无法定制（系统样式），所以这里「双层」——
+           隐藏的 select 仍是唯一事实来源（既有 JS 全部对它读写、change 事件照发），
+           上面叠一颗自绘按钮 + 分组弹层，展示层与数据层解耦。 -->
+      <div class="tsel" id="themePicker">
+        <button type="button" class="tsel-btn" id="themePickerBtn" aria-haspopup="listbox" aria-expanded="false" title="主题"><span id="themePickerLabel"></span><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="tsel-pop" id="themePickerPop" role="listbox" aria-label="选择主题"></div>
+      </div>
+      <select id="themeSel" aria-hidden="true" tabindex="-1" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"></select>
+      <details class="theme-panel" id="themePanel"><summary><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>主题管理</summary><div class="theme-box">
+        <div class="menu-items">
+          <button class="menu-item" id="genBtn" title="按当前文章用 AI 生成主题"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M19 14l.8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8z"/><path d="M5 15l.7 1.8 1.8.7-1.8.7L5 20l-.7-1.8-1.8-.7 1.8-.7z"/></svg>生成主题<span class="mi-hint">按本文用 AI 配一套</span></button>
+          <button class="menu-item" id="saveBtn" title="保存当前主题"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>保存主题<span class="mi-hint">写回主题库</span></button>
+          <button class="menu-item" id="thPreviewBtn" title="用统一示例文章对比所有主题的排版效果"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>主题预览…<span class="mi-hint">全部主题并排比</span></button>
+        </div>
+        <div class="menu-sep"></div>
+        <div id="typePanel">
+          <h4>排版设置 · 改当前主题</h4>
+          <div class="tp-card">
+            <div class="tp-row"><label>字体</label><select id="tpFont"></select></div>
+            <div class="tp-row"><label>自定义</label><input type="text" id="tpFontCustom" placeholder="Georgia, SimSun, serif" /></div>
+          </div>
+          <div class="tp-card">
+            <div class="tp-row"><label>字号</label><input type="range" id="tpSize" min="13" max="20" step="0.5" /><code id="tpSizeVal"></code></div>
+            <div class="tp-row"><label>行高</label><input type="range" id="tpLine" min="1.4" max="2.4" step="0.05" /><code id="tpLineVal"></code></div>
+            <div class="tp-row"><label>字距</label><input type="range" id="tpTrack" min="0" max="0.12" step="0.005" /><code id="tpTrackVal"></code></div>
+          </div>
+          <div class="tp-card">
+            <div class="tp-row"><label>正文色</label><input type="color" id="tpText" /><code id="tpTextVal"></code></div>
+            <div class="tp-row"><label>主色</label><input type="color" id="tpPrimary" /><code id="tpPrimaryVal"></code></div>
+            <div class="tp-row"><label>页面底色</label><input type="color" id="tpPageBg" /><button type="button" class="btn ghost" id="tpPageBgClear">跟随主题</button></div>
+          </div>
+          <div class="tp-hint">页面底色会写进根节点的 inline style，微信深色模式下文章不再透出暗底。<b>代价</b>：background-color 在白名单 GRAY 档，校验会多一条提示。</div>
+          <div class="tp-hint tp-state" id="tpState"></div>
+        </div>
+        <div class="tp-foot">
+          <button type="button" class="btn" id="tpReset">还原主题</button>
+          <button type="button" class="btn ink" id="tpSaveAs">另存为主题…</button>
+        </div>
+        <h4>已保存的自定义主题</h4>
+        <div id="themeList" class="tp-themes" style="max-height:190px;overflow:auto"></div>
+      </div></details>
+      <label class="lbl">标题</label><input type="text" id="title" placeholder="文章标题" style="flex:1 1 90px;min-width:80px;max-width:150px" />
+      <div class="cover-wrap">
+        <details class="theme-panel" id="coverPanel"><summary class="btn" title="封面：生成 / 上传 / 填 URL">
+          <span id="coverDot" style="display:none;width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none"></span>
+          封面<span id="coverDotText"></span>
+        </summary>
+        <div class="theme-box cover-box">
+          <div id="coverThumbWrp" style="display:none;position:relative;line-height:0">
+            <img id="coverThumb" alt="封面预览" style="width:100%;aspect-ratio:900/383;object-fit:cover;border:1px solid var(--line);display:block" />
+            <button id="coverClear" title="清除封面" aria-label="清除封面" style="position:absolute;top:-9px;right:-9px">×</button>
+          </div>
+          <div class="menu-items">
+            <button class="menu-item" id="coverGen" title="按当前主题色+标题生成一张封面（900×383）"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>生成封面<span class="mi-hint">主题色 + 标题</span></button>
+            <button class="menu-item" id="coverUpload" title="上传本地图片作封面"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>上传本地图…<span class="mi-hint">JPG / PNG / WebP</span></button>
+          </div>
+          <div class="menu-sep"></div>
+          <input type="text" id="cover" placeholder="或填封面图 URL（900×383）" />
+          <div class="tp-hint">900×383（2.35:1）。留空则用正文首图或自动生成。</div>
+        </div>
+      </details>
+      </div>
+      <input type="file" id="coverFile" accept="image/*" style="display:none" />
+      <div class="right">
+      <button class="btn" id="valBtn"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg>校验</button>
+      <button class="btn" id="copyHtmlBtn"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="3" width="8" height="4" rx="1"/><path d="M8 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/></svg>复制 HTML</button>
+      <button class="btn" id="copyWxBtn"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>复制到公众号</button>
+      <button class="btn primary" id="pubBtn"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>发布草稿箱</button>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- 中栏：编辑器 -->
+      <section class="editor-pane">
+        <div class="pane-toolbar" id="toolbar">
+          <button class="tb-btn" data-a="bold" title="加粗"><b>B</b></button>
+          <button class="tb-btn" data-a="italic" title="斜体"><i style="font-style:italic">I</i></button>
+          <button class="tb-btn" data-a="strike" title="删除线"><s>S</s></button>
+          <button class="tb-btn tm-trigger" data-a="heading" title="标题"><b>H</b></button>
+          <span class="tb-sep"></span>
+          <button class="tb-btn" data-a="quote" title="引用"><svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor"><path d="M9.5 4C5.9 4 3 6.9 3 10.5V20h8v-8H7c0-2.2 1.3-4 2.5-4V4zm11 0C16.9 4 14 6.9 14 10.5V20h8v-8h-4c0-2.2 1.3-4 2.5-4V4z"/></svg></button>
+          <button class="tb-btn" data-a="code" title="行内代码"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></button>
+          <!-- .tb-btn 是 flex 容器，flex item 会被 blockify、vertical-align 直接失效，
+               不包这一层的话上标/下标两个图标会渲染成一模一样 -->
+          <button class="tb-btn" data-a="sup" title="上标"><span>x<sup>2</sup></span></button>
+          <button class="tb-btn" data-a="sub" title="下标"><span>x<sub>2</sub></span></button>
+          <button class="tb-btn tm-trigger" data-a="list" title="列表"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4.5" cy="6" r="1.4" fill="currentColor"/><circle cx="4.5" cy="12" r="1.4" fill="currentColor"/><circle cx="4.5" cy="18" r="1.4" fill="currentColor"/></svg></button>
+          <button class="tb-btn" data-a="highlight" title="高亮"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 4.5 19.5 10 9.5 20H3.5v-6z"/><path d="M4 20h17"/></svg></button>
+          <span class="tb-sep"></span>
+          <button class="tb-btn" data-a="link" title="链接"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></button>
+          <button class="tb-btn" data-a="img" title="插入图片（可上传本地图或填 URL）"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></button>
+          <button class="tb-btn" data-a="imgupload" title="上传本地图到正文"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg></button>
+          <input type="file" id="bodyImgFile" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" />
+          <button class="tb-btn" data-a="video" title="插入视频占位块（真视频需发布后在公众号编辑器插入）"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="m16 10 6-3v10l-6-3"/></svg></button>
+          <button class="tb-btn" data-a="table" title="表格"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M10 4v16"/></svg></button>
+          <!-- Mermaid 图：下拉里是十种图型的模板，选一个插入 :::mermaid 源码块。
+               渲染在服务端出图（见 AGENTS.md §20.11），读者端拿到的是图片，微信稳定可显。 -->
+          <button class="tb-btn tm-trigger" data-a="mermaid" title="插入 Mermaid 图（流程图 / 时序图 / 饼图等，发布时渲染为图片）"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><path d="M9 6h6a3 3 0 0 1 3 3v6"/><path d="m15 12 3 3 3-3"/></svg></button>
+          <button class="tb-btn" data-a="hr" title="分隔线"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 12h16"/></svg></button>
+          <button class="tb-btn tm-trigger" data-a="callout" title="警告框"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4"/><path d="M12 17.5h.01"/></svg></button>
+          <button class="tb-btn tm-trigger" data-a="component" title="富组件"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><path d="M17 13v8M13 17h8"/></svg></button>
+          <span class="tb-sep"></span>
+          <button class="tb-btn" data-a="clear" title="清除格式"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          <button class="tb-btn" data-a="help" title="Markdown 帮助"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></button>
+        </div>
+        <textarea class="markdown" id="md" spellcheck="false" placeholder="# 在这里输入 Markdown…"></textarea>
+        <div class="ed-status"><span id="wc">字数 0</span><span id="rt">0 分钟阅读</span><span class="grow"></span><span id="saveState">就绪</span></div>
+      </section>
+
+      <!-- 右栏：预览 -->
+      <section class="preview-pane">
+        <div class="preview-head"><span class="tab active" id="p1">实时预览</span><span class="tab" id="p2">手机视图</span><span class="grow"></span><button class="tab" id="darkToggle" aria-pressed="false" title="模拟微信深色模式：页底变暗，检查正文是否会看不清"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.4 14.2A8.5 8.5 0 0 1 9.8 3.6a7 7 0 1 0 10.6 10.6z"/></svg>深色模式</button><button class="tab" id="syncToggle" aria-pressed="true" title="左右栏同步滚动">同步滚动</button><span style="color:var(--muted)">390px</span></div>
+        <div class="preview-wrap" id="previewWrap"><div class="empty" id="pvEmpty"><span class="e-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></span><b>正在渲染</b>输入 Markdown 后这里实时出稿</div><iframe class="preview" id="pv" style="display:none"></iframe></div>
+        <div class="val-bar" id="status"><span class="v plain">就绪 · 输入 Markdown 自动渲染</span></div>
+      </section>
+    </div>
+  </div>
+</div>
+<div class="table-picker" id="tablePicker"></div>
+<div class="tm-picker" id="tmPicker"></div>
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<!-- 插入视频弹窗 -->
+<div class="overlay" id="videoOverlay">
+  <div class="modal">
+    <div class="modal-head"><div><b>插入视频</b><span class="sub">微信正文写不进真视频，这里放占位块</span></div><button class="modal-close" data-close-video aria-label="关闭"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="set-row">
+        <div class="s-txt"><b>真视频发布后在公众号插入：</b><small>① 光标放在占位块上 → ② 工具栏「视频」→「本地上传」选 MP4 → ③ 删掉占位块</small></div>
+      </div>
+      <div class="set-row">
+        <div class="s-txt"><b>封面图</b><small>可留空。</small></div>
+      </div>
+      <div class="v-fields">
+        <input id="vSrc" placeholder="https://example.com/cover.jpg（可留空）" />
+        <input id="vTitle" placeholder="视频标题（可选，写进占位标记，便于发布脚本定位）" />
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn ink" id="vInsert">插入占位块</button><button class="btn" data-close-video>取消</button></div>
+  </div>
+</div>
+
+<!-- 图床设置弹窗 -->
+<div class="overlay" id="imgHostOverlay">
+  <div class="modal">
+    <div class="modal-head"><div><b>图床设置</b><span class="sub">外链图怎么在微信里显示出来</span></div><button class="modal-close" data-close aria-label="关闭"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="set-row">
+        <div class="s-txt"><b>发布时自动上传外链图到微信素材库</b><small>开启后会把正文里的外链图片搬运为微信 CDN（mmbiz.qpic.cn）链接，微信端才能显示；关闭则保留原外链 URL（可能无法显示）。</small></div>
+        <label class="switch"><input type="checkbox" id="relocateOpt" checked><span class="slider"></span></label>
+      </div>
+      <div class="set-row">
+        <div class="s-txt"><b>预览用图床</b><small>编辑器右侧预览使用本地 Chromium 渲染，不依赖网络图床；正式发布按上面开关处理。</small></div>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close>关闭</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="compOverlay">
+  <div class="modal comp-modal">
+    <div class="modal-head"><div><b>组件库</b><span class="sub" id="compCount"></span></div><button class="modal-close" data-close-comp aria-label="关闭"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="modal-body comp-body">
+      <aside class="comp-side">
+        <input class="comp-search" id="compSearch" placeholder="搜索组件…" />
+        <div class="comp-list" id="compList"></div>
+      </aside>
+      <section class="comp-detail">
+        <div class="comp-head">
+          <div class="comp-name" id="compName">选择一个组件</div>
+          <div class="comp-desc" id="compDesc">左侧列表可以搜索、点击查看效果</div>
+          <div class="comp-slots" id="compSlots"></div>
+          <div class="comp-params" id="compParams" style="display:none"></div>
+          <div class="comp-notes" id="compNotes" style="display:none"></div>
+          <div class="comp-actions">
+            <button class="btn ink" id="compInsert" disabled>插入到正文</button>
+            <button class="btn" id="compGen" disabled>生成示例</button>
+            <button class="btn" id="compCopy" disabled>复制示例</button>
+            <button class="btn ghost" id="compReset" disabled>重置</button>
+          </div>
+        </div>
+        <div class="comp-preview-wrap"><div class="comp-empty" id="compEmpty">正在渲染…</div><iframe class="comp-preview" id="compPreview" style="display:none" sandbox="allow-same-origin"></iframe></div>
+        <details class="comp-src"><summary>示例 Markdown</summary><pre id="compSrc"></pre></details>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="themeOverlay">
+  <div class="modal comp-modal">
+    <div class="modal-head"><div><b>主题预览</b><span class="sub" id="thCount"></span></div><button class="modal-close" data-close-th aria-label="关闭"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="modal-body comp-body">
+      <aside class="comp-side">
+        <input class="comp-search" id="thSearch" placeholder="搜索主题…" />
+        <div class="comp-list" id="thList"></div>
+      </aside>
+      <section class="comp-detail">
+        <div class="comp-head">
+          <div class="comp-name" id="thName">选择一个主题</div>
+          <div class="comp-desc" id="thDesc">左侧列表可以搜索、点击查看排版效果</div>
+          <div class="comp-slots" id="thMeta"></div>
+          <div class="comp-actions">
+            <button class="btn ink" id="thApply" disabled>应用此主题</button>
+            <button class="btn" id="thCopyName" disabled>复制名称</button>
+          </div>
+        </div>
+        <div class="comp-preview-wrap"><div class="comp-empty" id="thEmpty">正在渲染…</div><iframe class="comp-preview theme-prev" id="thPreview" style="display:none" sandbox="allow-same-origin"></iframe></div>
+        <details class="comp-src"><summary>调色板与字体</summary><div class="th-swatches" id="thSwatches"></div><div class="th-font" id="thFont"></div></details>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="impOverlay">
+  <div class="modal">
+    <div class="modal-head"><div><b>导入 HTML</b><span class="sub">带组件标记的 HTML 可精确还原成 ::: 指令</span></div><button class="modal-close" data-close-imp aria-label="关闭"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="ai-hint" style="margin-top:0">支持 stylewx 渲染的 HTML（带组件标记，可精确还原 <code>:::card</code> 等指令）或普通 HTML 片段。可直接粘贴，也可选择 .html 文件。</div>
+      <textarea class="imp-text" id="impText" placeholder="在此粘贴 HTML…"></textarea>
+      <div class="key-toolbar" style="margin-top:10px">
+        <button class="btn" id="impPickFile">选择 .html 文件</button>
+        <span class="grow"></span>
+        <span class="key-hint" id="impInfo" style="margin:0"></span>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close-imp>取消</button><button class="btn ink" id="impRun">导入并还原</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="aiOverlay">
+  <div class="modal">
+    <div class="modal-head"><div><b>AI 优化</b><span class="sub">保留 Markdown 结构与事实，只改表达</span></div><button class="modal-close" data-close-ai aria-label="关闭"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="ai-scope">
+        <span class="ai-lbl" style="margin:0">作用范围</span>
+        <div class="ai-chips">
+          <label class="ai-chip"><input type="radio" name="aiScope" value="all" checked>全文</label>
+          <label class="ai-chip"><input type="radio" name="aiScope" value="sel">选中片段<span class="ai-selinfo" id="aiSelInfo"></span></label>
+        </div>
+      </div>
+      <label class="ai-lbl" style="margin-top:14px">优化要求（可选，自定义 prompt）</label>
+      <textarea class="ai-prompt" id="aiPrompt" rows="4" placeholder="例如：把开头写得更有吸引力；语句更口语化；压缩到 800 字以内；每段补一个小标题…（留空 = 通用优化）"></textarea>
+      <div class="ai-hint">提示：先在编辑器里选中想优化的文字，再点「AI 优化」即可只优化该段；不选中则默认优化全文。优化会保留 Markdown 结构与事实，不改变主旨。</div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close-ai>取消</button><button class="btn ink" id="aiRun">开始优化</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="keyOverlay">
+  <div class="modal key-modal">
+    <div class="modal-head"><div><b>快捷键设置</b><span class="sub">点按键框后按组合键，或直接输入如 Ctrl+W</span></div><button class="modal-close" data-close-keys aria-label="关闭"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="modal-body" style="padding-bottom:8px">
+      <div class="key-toolbar">
+        <span class="key-hint" style="margin:0">按键冲突会当场拒绝，清空后不占用其它动作。</span>
+        <span class="grow"></span>
+        <button class="btn" id="keyReset">恢复默认</button>
+        <button class="btn" id="keyClearAll">清空全部</button>
+      </div>
+      <div class="key-title">格式</div>
+      <div id="keyFormat"></div>
+      <div class="key-title">插入</div>
+      <div id="keyInsert"></div>
+      <div class="key-title">操作</div>
+      <div id="keyOps"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close-keys>关闭</button><button class="btn ink" id="keySave">保存</button></div>
+  </div>
+</div>
+
+<!-- 另存为：文件名 + 目录浏览（位置只能在文章根目录内，服务端把关）。
+     不用 window.prompt：会被浏览器「阻止此页面创建更多对话框」静默禁掉，点了没反应。 -->
+<div class="overlay" id="saveAsOverlay">
+  <div class="modal">
+    <div class="modal-head"><div><b>另存为</b><span class="sub">选一个新位置保存这篇文章</span></div><button class="modal-close" data-close-saveas aria-label="关闭"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div class="modal-body">
+      <label class="ai-lbl" for="saveAsName">文件名</label>
+      <input type="text" id="saveAsName" placeholder="文章名.md" autocomplete="off" spellcheck="false" />
+      <div class="ai-lbl" style="margin-top:14px">保存位置</div>
+      <div class="sa-crumbs" id="saveAsCrumbs"></div>
+      <div class="sa-list" id="saveAsList"></div>
+      <div class="sa-newdir">
+        <input type="text" id="saveAsNewDir" placeholder="新建文件夹名" autocomplete="off" spellcheck="false" />
+        <button class="btn" id="saveAsMkdir" type="button">新建</button>
+      </div>
+    </div>
+    <div class="modal-foot"><button class="btn" data-close-saveas>取消</button><button class="btn ink" id="saveAsRun">保存</button></div>
+  </div>
+</div>
+
+<script>
+// ---- 状态 ----
+let lastHtml=''; let themesCache=[]; let currentTitle='';
+let history=[]; // [{id, title, md, ts}]
+let activeId=null; // 当前正在编辑的历史条目 id（用于更新而非重复新增）
+let linkedFile=null; // 通过 ?file= 打开时记录的文件路径
+let coverFile=null; // 本地上传的封面 { data: base64, mime }
+const $=s=>document.querySelector(s);
+// toast：圆点是语义位（蓝 = 成功，红 = 失败），文案负责说清楚；
+// 出场由 CSS 的 transform 过渡（从底下浮上来），这里只负责切类。
+const toast=(m,ok=true)=>{const t=$('#toast');t.innerHTML='<i></i>'+String(m).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));t.className='toast show'+(ok?'':' err');clearTimeout(toast._t);toast._t=setTimeout(()=>t.className='toast',2400);};
+
+// ---- 通用：给图标按钮补可访问名称（title 在触屏/读屏上不可靠）----
+function initAriaLabels(){
+  document.querySelectorAll('#toolbar .tb-btn, .subnav button, .theme-box .menu-item, .modal-close').forEach(b=>{
+    if(b.getAttribute('aria-label')) return;
+    let lbl;
+    if(b.classList.contains('modal-close')) lbl='关闭';
+    else lbl=b.getAttribute('title')||b.textContent.trim();
+    if(lbl) b.setAttribute('aria-label', lbl);
+  });
+}
+initAriaLabels();
+
+// ---- 通用：异步按钮 busy 态（禁用 + aria-busy）----
+function busy(btn, waiting){
+  if(!btn) return;
+  btn.disabled=waiting;
+  if(waiting) btn.setAttribute('aria-busy','true'); else btn.removeAttribute('aria-busy');
+}
+
+// ---- 通用：模态框打开/关闭 + 焦点记忆 + Esc 退出 + Tab 焦点圈定 ----
+let _lastFocus=null;
+const MODALS=['#imgHostOverlay','#aiOverlay','#keyOverlay','#impOverlay','#compOverlay','#themeOverlay','#saveAsOverlay'];
+function openModal(id, focusSel){
+  const o=$(id); if(!o) return; _lastFocus=document.activeElement; o.classList.add('show');
+  const el=o.querySelector(focusSel||'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])');
+  if(el) el.focus();
+}
+function closeModal(id){
+  const o=$(id); if(!o) return; o.classList.remove('show');
+  if(id==='#keyOverlay') disableKeyGuard();   // 关闭快捷键设置弹窗 → 解除拦截
+  if(_lastFocus && _lastFocus.focus) _lastFocus.focus();
+}
+// beforeunload 守卫：设置弹窗打开期间阻止 Ctrl+W 等关标签页/刷新
+function keyGuard(e){ e.preventDefault(); e.returnValue=''; }
+function enableKeyGuard(){ window.addEventListener('beforeunload', keyGuard); }
+function disableKeyGuard(){ window.removeEventListener('beforeunload', keyGuard); }
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ MODALS.forEach(s=>{ const o=$(s); if(o&&o.classList.contains('show')) closeModal(s); }); }
+  if(e.key==='Tab'){
+    const open=MODALS.map(s=>$(s)).find(o=>o&&o.classList.contains('show')); if(!open) return;
+    const f=open.querySelectorAll('button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])');
+    if(!f.length) return;
+    const first=f[0], last=f[f.length-1];
+    if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); }
+  }
+});
+
+// ================= 快捷键设置引擎 =================
+const KEY_ACTIONS=[
+  // 格式
+  {id:'bold',  label:'加粗',      cat:'format', run:()=>ACTIONS.bold()},
+  {id:'italic',label:'斜体',      cat:'format', run:()=>ACTIONS.italic()},
+  {id:'strike',label:'删除线',    cat:'format', run:()=>ACTIONS.strike()},
+  {id:'highlight',label:'高亮',   cat:'format', run:()=>ACTIONS.highlight()},
+  {id:'code',  label:'行内代码',  cat:'format', run:()=>ACTIONS.code()},
+  {id:'h1',    label:'一级标题',  cat:'format', run:()=>ACTIONS.h1()},
+  {id:'h2',    label:'二级标题',  cat:'format', run:()=>ACTIONS.h2()},
+  {id:'h3',    label:'三级标题',  cat:'format', run:()=>ACTIONS.h3()},
+  {id:'quote', label:'引用',      cat:'format', run:()=>ACTIONS.quote()},
+  {id:'ul',    label:'无序列表',  cat:'format', run:()=>ACTIONS.ul()},
+  {id:'ol',    label:'有序列表',  cat:'format', run:()=>ACTIONS.ol()},
+  // 插入
+  {id:'link',  label:'链接',      cat:'insert', run:()=>ACTIONS.link()},
+  {id:'img',   label:'图片',      cat:'insert', run:()=>ACTIONS.img()},
+  {id:'imgupload', label:'上传图片', cat:'insert', run:()=>$('#bodyImgFile').click()},
+  {id:'video', label:'插入视频', cat:'insert', run:()=>insertVideoPlaceholder()},
+  {id:'sup',   label:'上标',      cat:'insert', run:()=>ACTIONS.sup()},
+  {id:'sub',   label:'下标',      cat:'insert', run:()=>ACTIONS.sub()},
+  {id:'hr',    label:'分隔线',    cat:'insert', run:()=>ACTIONS.hr()},
+  // 操作
+  {id:'undo',  label:'撤销',      cat:'ops',    run:()=>doUndo()},
+  {id:'redo',  label:'重做',      cat:'ops',    run:()=>doRedo()},
+  {id:'save',  label:'手动保存',  cat:'ops',    run:()=>{saveSnap();toast('已保存');}},
+  {id:'pub',   label:'发布草稿箱',cat:'ops',    run:()=>$('#pubBtn').click()},
+  {id:'ai',    label:'AI 优化',   cat:'ops',    run:()=>$('#navAi').click()},
+  {id:'validate',label:'校验',    cat:'ops',    run:()=>$('#valBtn').click()},
+  {id:'copyWx',label:'复制到公众号',cat:'ops',  run:()=>$('#copyWxBtn').click()},
+];
+// 默认绑定：只有这些默认启用（其余留空，避免误触发）。
+const DEFAULT_KEYS={
+  bold:'ctrl+b', italic:'ctrl+i', strike:'ctrl+shift+x', highlight:'ctrl+shift+h', code:'ctrl+e',
+  h1:'ctrl+alt+1', h2:'ctrl+alt+2', h3:'ctrl+alt+3',
+  link:'ctrl+k', img:'ctrl+shift+i', sup:'ctrl+shift+period', sub:'ctrl+shift+comma', hr:'ctrl+shift+u',
+  undo:'ctrl+z', redo:'ctrl+y', save:'ctrl+s', pub:'ctrl+enter',
+};
+const KEY_STORE='mp-shortcuts';
+let keyBindings={};               // id -> 'ctrl+shift+x' (小写、无空格)
+let recordingKey=null;            // 当前录音的 action id
+
+function normKey(e){
+  let k=e.key.toLowerCase();
+  if(k==='.') k='period'; else if(k===',') k='comma'; else if(k===' ') k='space';
+  return [e.ctrlKey&&'ctrl', e.metaKey&&'meta', e.altKey&&'alt', e.shiftKey&&'shift']
+    .filter(Boolean).concat(k).join('+');
+}
+function fmtKeyText(str){
+  if(!str) return '';
+  const parts=str.split('+'); let out=[];
+  for(const p of parts){
+    if(p==='ctrl') out.push('Ctrl');
+    else if(p==='meta') out.push('Cmd');
+    else if(p==='alt') out.push('Alt');
+    else if(p==='shift') out.push('Shift');
+    else if(p==='period') out.push('.');
+    else if(p==='comma') out.push(',');
+    else out.push(p.toUpperCase());
+  }
+  return out.join('+');
+}
+function fmtKeyChar(p){
+  if(p==='period') return '.'; if(p==='comma') return ','; if(p==='space') return 'Space';
+  return String(p).toUpperCase();
+}
+function loadKeys(){ try{ keyBindings=Object.assign({},DEFAULT_KEYS,JSON.parse(localStorage.getItem(KEY_STORE)||'{}')); }catch(e){ keyBindings=Object.assign({},DEFAULT_KEYS); } }
+function saveKeys(){ localStorage.setItem(KEY_STORE,JSON.stringify(keyBindings)); }
+
+function renderKeyRows(){
+  const cats={'format':'格式','insert':'插入','ops':'操作'};
+  for(const c in cats){ const box=$('#key'+c[0].toUpperCase()+c.slice(1)); if(box) box.innerHTML=''; }
+  KEY_ACTIONS.forEach(a=>{
+    const box=$('#key'+a.cat[0].toUpperCase()+a.cat.slice(1));
+    const row=document.createElement('div'); row.className='key-row';
+    const cur=keyBindings[a.id]||'';
+    const dup=findDup(a.id);
+    row.innerHTML='<div class="key-name">'+a.label+(dup?'<span class="key-dup">(与 '+dup+' 冲突)</span>':'')+'</div>'+
+      '<input class="key-combo" type="text" data-id="'+a.id+'" placeholder="点此/输入快捷键" value="'+esc(fmtKeyText(cur))+'" autocomplete="off" spellcheck="false">'+
+      '<button class="key-clear" data-id="'+a.id+'" title="清除" aria-label="清除 '+a.label+' 的快捷键">×</button>';
+    box.appendChild(row);
+  });
+}
+function findDup(id){
+  const mine=keyBindings[id]; if(!mine) return '';
+  const other=KEY_ACTIONS.find(a=>a.id!==id && keyBindings[a.id]===mine);
+  return other?other.label:'';
+}
+// 打开弹窗时渲染
+function openKeysModal(){
+  loadKeys(); recordingKey=null; renderKeyRows(); openModal('#keyOverlay'); enableKeyGuard();
+}
+// —— 快捷键设置：input 双通道（按键录制 + 文字输入）——
+const MODIFIER_KEYS=['Control','Shift','Alt','Meta'];
+function parseComboText(txt){
+  // 宽松归一化：支持 "Ctrl+B"、"Ctrl+Shift+X"、"Ctrl,Shift,T"、"Ctrl Shift X"、"Ctrl+Shift+." 等
+  if(!txt) return '';
+  let s=String(txt).trim();
+  if(!s) return '';
+  // 切分：加号或空格作分隔符（用户最常用 Ctrl+B / Ctrl Shift X）
+  const tokens=s.split(/[\s+]+/).map(x=>x.trim()).filter(Boolean);
+  const mods=[]; let key='';
+  const map={'ctrl':'ctrl','control':'ctrl','cmd':'meta','command':'meta','meta':'meta','alt':'alt','option':'alt','shift':'shift'};
+  for(let tok of tokens){
+    tok=tok.toLowerCase();
+    if(tok==='comma'){ key='comma'; continue; }
+    if(tok==='period'||tok==='.'){ key='period'; continue; }
+    if(tok==='space'){ key='space'; continue; }
+    if(map[tok]){ if(!mods.includes(map[tok])) mods.push(map[tok]); continue; }
+    key=tok;
+  }
+  if(!mods.length) return '';
+  if(!key) return '';                       // 必须有真实键（如 Ctrl / Ctrl+ 不合法）
+  const order={ctrl:'ctrl',meta:'meta',alt:'alt',shift:'shift'};
+  const sorted=mods.sort((a,b)=>Object.keys(order).indexOf(a)-Object.keys(order).indexOf(b));
+  return sorted.join('+')+'+'+key;
+}
+// 弹窗打开时拦截浏览器保留键（防止误关页面/刷新），但仅当此事件确实指向录制 input
+$('#keyOverlay').addEventListener('keydown',e=>{
+  const combo=e.target.closest('.key-combo'); if(!combo) return;
+  // 回车提交文字输入
+  if(e.key==='Enter'){ e.preventDefault(); combo.blur(); return; }
+  // 用户正在这个 input 里：用按键录制
+  if(e.key==='Escape'){ recordingKey=null; document.querySelectorAll('.key-combo').forEach(x=>x.classList.remove('recording')); renderKeyRows(); return; }
+  if(MODIFIER_KEYS.includes(e.key)){ e.preventDefault(); return; }
+  // 只有组合键才拦截并记录；纯单键(如只按 a)不拦，让用户可输入文字
+  if(e.ctrlKey||e.metaKey||e.altKey){
+    e.preventDefault();
+    const c=normKey(e);
+    if(!(e.ctrlKey||e.metaKey||e.altKey)){ toast('请至少包含一个修饰键(Ctrl/Alt/Shift/Cmd)',false); return; }
+    const exists=KEY_ACTIONS.find(a=>a.id!==combo.dataset.id && keyBindings[a.id]===c);
+    if(exists){ toast('该按键已被“'+exists.label+'”占用',false); return; }
+    keyBindings[combo.dataset.id]=c; recordingKey=null; renderKeyRows();
+  }
+});
+// 点击 input 聚焦 → 进入录制态并清空待输入
+$('#keyOverlay').addEventListener('focusin',e=>{
+  const combo=e.target.closest('.key-combo'); if(!combo) return;
+  recordingKey=combo.dataset.id;
+  document.querySelectorAll('.key-combo').forEach(x=>x.classList.remove('recording'));
+  combo.classList.add('recording'); combo.value='';
+});
+// 在 input 里输入文字（如直接打 "Ctrl+B"）：blur 时解析并保存
+$('#keyOverlay').addEventListener('input',e=>{
+  const combo=e.target.closest('.key-combo'); if(!combo) return;
+  if(recordingKey===combo.dataset.id && /\S/.test(combo.value)){
+    // 有文字输入：停止纯按键录制态（不立刻绑，等 blur 统一解析）
+  }
+});
+$('#keyOverlay').addEventListener('blur',e=>{
+  const combo=e.target.closest('.key-combo'); if(!combo) return;
+  const t=combo.value.trim();
+  let comboStr='';
+  if(t){
+    comboStr=parseComboText(t);
+    if(!comboStr){ toast('无法识别：请输入如 Ctrl+B 或 Ctrl+Shift+X',false); renderKeyRows(); return; }
+    const exists=KEY_ACTIONS.find(a=>a.id!==combo.dataset.id && keyBindings[a.id]===comboStr);
+    if(exists){ toast('该按键已被“'+exists.label+'”占用',false); renderKeyRows(); return; }
+    keyBindings[combo.dataset.id]=comboStr;
+  }
+  recordingKey=null; renderKeyRows();
+});
+// 点非 input 处结束录制(可退出)
+$('#keyOverlay').addEventListener('click',e=>{
+  if(e.target.closest('.key-combo')) return;
+  if(recordingKey){ recordingKey=null; document.querySelectorAll('.key-combo').forEach(x=>x.classList.remove('recording')); renderKeyRows(); }
+});
+// 清除某条
+$('#keyOverlay').addEventListener('click',e=>{
+  const clr=e.target.closest('.key-clear'); if(!clr) return;
+  delete keyBindings[clr.dataset.id]; saveKeys(); renderKeyRows(); e.stopPropagation();
+});
+$('#keyReset').onclick=()=>{ keyBindings=Object.assign({},DEFAULT_KEYS); saveKeys(); renderKeyRows(); toast('已恢复默认'); };
+$('#keyClearAll').onclick=()=>{ keyBindings={}; saveKeys(); renderKeyRows(); toast('已清空全部'); };
+$('#keySave').onclick=()=>{ saveKeys(); closeModal('#keyOverlay'); toast('快捷键已保存'); };
+$('#navKeys').onclick=()=>{ nav('navKeys'); openKeysModal(); };
+// 统一关闭：头部 × 与底部“关闭”都绑 closeModal
+document.querySelectorAll('#keyOverlay [data-close-keys]').forEach(b=>b.onclick=()=>closeModal('#keyOverlay'));
+$('#keyOverlay').addEventListener('click',e=>{ if(e.target.id==='keyOverlay') closeModal('#keyOverlay'); });
+// 全局 keyboard 拦截：命中则触发动作(录音弹窗内不触发)
+function triggerFromKeys(e){
+  if($('#keyOverlay').classList.contains('show')) return;   // 录音时不吃
+  let cb=e.target || document.activeElement;
+  // 先把命中判定出来：只有真的绑定了快捷键才拦截；否则放行(保留浏览器默认/文本操作)
+  const combo=normKey(e);
+  const hit=KEY_ACTIONS.find(a=>keyBindings[a.id]===combo);
+  if(!hit) return;   // 无绑定 → 不拦截(即使焦点在输入框也不影响浏览器默认)
+  // 有绑定 → 统一触发动作
+  e.preventDefault();
+  if(e.repeat) return;
+  hit.run();
+}
+document.addEventListener('keydown',e=>{ if(!e.ctrlKey&&!e.metaKey) return; triggerFromKeys(e); });
+loadKeys();
+
+
+async function api(path, body){
+  const opts=body?{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}:{};
+  const r=await fetch(path,opts); const d=await r.json().catch(()=>({error:{message:'HTTP '+r.status}}));
+  if(d.error){
+    // 把 code / hint 一并挂到 Error 上，调用方可以按 code 分支（旧调用方只用 message，不受影响）
+    const err=new Error(d.error.message||'请求失败');
+    err.code=d.error.code||'unknown'; err.hint=d.error.hint||'';
+    throw err;
+  }
+  return d;
+}
+
+// ---- 主题 ---
+async function loadThemes(){
+  const d=await api('/editor/api/themes'); themesCache=d.themes||[];
+  const saved=themesCache.filter(t=>t.origin==='saved'), presets=themesCache.filter(t=>t.origin!=='saved');
+  const sel=$('#themeSel'); const keep=sel.value||(themesCache[0]&&themesCache[0].name); sel.innerHTML='';
+  if(saved.length){const og=document.createElement('optgroup');og.label='我的主题';saved.forEach(t=>og.appendChild(new Option(t.name,t.name)));sel.appendChild(og);}
+  const pg=document.createElement('optgroup');pg.label='预置主题';presets.forEach(t=>pg.appendChild(new Option(t.name,t.name)));sel.appendChild(pg);
+  if(keep)sel.value=keep; else if(themesCache[0])sel.value=themesCache[0].name;
+  fillTypePanel();   // 主题列表重载后面板必须重填 —— 否则字体下拉是空的（首次打开就撞过这个）
+  renderThemeList(saved);
+  renderThemePicker();   // 自绘选择器的按钮文字与弹层跟著 select 走
+  return sel.value;
+}
+
+// ---- 主题管理面板 · 已保存主题列表 ----
+// 原来是「• 名字」的纯文本列表，既不能点也不能看到颜色，只是个目录。
+// 现在每行是一颗行卡片：色板（正文/主色/底色） + 名字 + 当前标记，点击即切换。
+// 色板直接从主题 token 取，与顶部下拉、预览页用的是同一份事实。
+function themeSwatches(t){
+  const c=(t.tokens||{});
+  return [c.textColor,c.primaryColor,c.pageBackgroundColor].filter(Boolean).slice(0,3)
+    .map(x=>'<i style="background:'+esc(x)+'"></i>').join('');
+}
+function renderThemeList(saved){
+  const box=$('#themeList'); const cur=$('#themeSel').value;
+  box.innerHTML=saved.length
+    ? saved.map(t=>'<button type="button" class="tp-theme'+(t.name===cur?' on':'')+'" data-name="'+esc(t.name)+'" title="切换到 '+esc(t.name)+'">'
+        +'<span class="sw">'+themeSwatches(t)+'</span>'
+        +'<span class="nm">'+esc(t.name)+'</span>'
+        +(t.name===cur?'<span class="cur">当前</span>':'')
+      +'</button>').join('')
+    : '<div class="tp-empty">暂无自定义主题。在上面用「生成主题」或「另存为主题…」加入，点击即切换。</div>';
+}
+$('#themeList').addEventListener('click',e=>{
+  const b=e.target.closest('.tp-theme'); if(!b) return;
+  const sel=$('#themeSel');
+  if(![...sel.options].some(o=>o.value===b.dataset.name)) return;
+  sel.value=b.dataset.name; sel.dispatchEvent(new Event('change'));
+  toast('已切换主题：'+b.dataset.name);
+});
+
+// ---- 自绘主题选择器（顶栏）----
+// 隐藏的 #themeSel 仍是唯一事实来源；这里只从它的 optgroup 渲染弹层，
+// 选中时写回 select 并派发 change（和原来的交互路径完全一致）。
+const TICK='<svg class="tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>';
+function renderThemePicker(){
+  const sel=$('#themeSel'); const cur=sel.value;
+  $('#themePickerLabel').textContent=cur||'主题';
+  const groups=[]; const seen=new Set();
+  [...sel.options].forEach(o=>{
+    const g=o.parentElement&&o.parentElement.tagName==='OPTGROUP'?(o.parentElement.label||''):'其他';
+    if(!seen.has(g)){ seen.add(g); groups.push([g,[]]); }
+    groups.find(([k])=>k===g)[1].push(o);
+  });
+  $('#themePickerPop').innerHTML=groups.map(([g,opts])=>
+    '<div class="tsel-group">'+esc(g)+'</div>'
+    +opts.map(o=>'<button type="button" role="option" aria-selected="'+(o.value===cur)+'" class="tsel-opt'+(o.value===cur?' on':'')+'" data-v="'+esc(o.value)+'">'
+      +'<span class="nm">'+esc(o.value)+'</span>'+TICK+'</button>').join('')
+  ).join('');
+}
+$('#themePickerBtn').addEventListener('click',e=>{
+  e.stopPropagation();
+  const pop=$('#themePickerPop'); const open=!pop.classList.contains('show');
+  pop.classList.toggle('show',open);
+  $('#themePickerBtn').setAttribute('aria-expanded',String(open));
+  if(open) renderThemePicker();
+});
+$('#themePickerPop').addEventListener('click',e=>{
+  const b=e.target.closest('.tsel-opt'); if(!b) return;
+  const sel=$('#themeSel');
+  if(sel.value!==b.dataset.v){ sel.value=b.dataset.v; sel.dispatchEvent(new Event('change')); }
+  $('#themePickerPop').classList.remove('show');
+  $('#themePickerBtn').setAttribute('aria-expanded','false');
+});
+// 点别处 / 按 Esc 收起；选中态变化（含其它入口切主题）时同步按钮文字
+document.addEventListener('click',e=>{ if(!e.target.closest('#themePicker')){ $('#themePickerPop').classList.remove('show'); $('#themePickerBtn').setAttribute('aria-expanded','false'); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('#themePickerPop').classList.contains('show')){ $('#themePickerPop').classList.remove('show'); $('#themePickerBtn').setAttribute('aria-expanded','false'); $('#themePickerBtn').focus(); } });
+$('#themeSel').addEventListener('change',()=>{ $('#themePickerLabel').textContent=$('#themeSel').value||'主题'; renderThemePicker(); });
+
+// ---- 渲染 (防抖) ---
+let timer;
+// ---- 主题 token 覆写（排版设置面板）----
+// 关键：编辑器只传主题「名」时，服务端永远拿预置值；要能改字体/字号/颜色，
+// 就必须把改过的完整主题对象发过去 —— resolveTheme 本来就收对象。
+let themeOverrides={};   // token 字段 → 值；只记动过的
+const FONT_PRESETS=[
+  ['系统默认（推荐）',''],
+  ['宋体（衬线）','Georgia, "Songti SC", "SimSun", serif'],
+  ['黑体（无衬线）','-apple-system, "PingFang SC", "Microsoft YaHei", sans-serif'],
+  ['楷体','"Kaiti SC", "KaiTi", "STKaiti", serif'],
+  ['等宽','ui-monospace, "SF Mono", Consolas, "Courier New", monospace'],
+];
+function baseTheme(){ return themesCache.find(t=>t.name===$('#themeSel').value); }
+function currentTheme(){
+  const base=baseTheme();
+  if(!base) return $('#themeSel').value;   // 主题还没加载完时退回名字
+  const t=JSON.parse(JSON.stringify(base));
+  for(const [k,v] of Object.entries(themeOverrides)){
+    if (v===''||v==null){ delete t.tokens[k]; continue; }
+    if(k==='spacing'&&v&&typeof v==='object'){ t.tokens.spacing={...t.tokens.spacing,...v}; continue; }
+    t.tokens[k]=v;
+  }
+  // 页面底色用专用 token（见 schema 注释），不再借用 canvasBg
+  return t;
+}
+function overrideCount(){ return Object.keys(themeOverrides).length; }
+function paintTypeState(){
+  const n=overrideCount();
+  const el=$('#tpState');
+  if(!el) return;
+  el.innerHTML=n
+    ? '<span class="tp-dirty">已改 '+n+' 项</span>，只对预览与发布生效；点底部「另存为主题…」固化到主题库。'
+    : '未修改。改动只发往预览与发布，不自动写回主题库。';
+}
+
+// ---- 深色模式预览 ----
+// 模拟的是「微信把页底变暗、不改正文 inline 样式」这一件事，
+// 再在真实 DOM 里扫「深色文字且无底色」的元素 —— 这就是深色模式下会看不见的那批。
+let darkOn=false;
+const DARK_PAGE_BG='#1f1f22';
+function applyDarkMode(){
+  const f=$('#pv');
+  if(!f||!f.contentDocument) return;
+  const doc=f.contentDocument;
+  doc.documentElement.style.background=darkOn?DARK_PAGE_BG:'';
+  doc.body.style.background=darkOn?DARK_PAGE_BG:'';
+}
+function scanDarkRisk(){
+  const f=$('#pv');
+  if(!f||!f.contentDocument) return [];
+  const doc=f.contentDocument, out=[];
+  const lum=(c)=>{ // 相对亮度（简化 sRGB）
+    const m=/rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c); if(!m) return null;
+    const [r,g,b]=[m[1],m[2],m[3]].map(Number).map(x=>{const s=x/255;return s<=0.03928?s/12.92:Math.pow((s+0.055)/1.055,2.4);});
+    return 0.2126*r+0.7152*g+0.0722*b;
+  };
+  // 有效底色 = 从自身往上找第一层不透明的背景；都没有才是「裸贴页底」
+  const effBg=(el)=>{
+    for(let n=el;n;n=n.parentElement){
+      const c=doc.defaultView.getComputedStyle(n).backgroundColor;
+      if(c&&c!=='rgba(0, 0, 0, 0)'&&c!=='transparent') return c;
+    }
+    return '';
+  };
+  const walker=doc.createTreeWalker(doc.body,NodeFilter.SHOW_ELEMENT);
+  let el;
+  while((el=walker.nextNode())){
+    if(!el.textContent||!el.textContent.trim()) continue;
+    const cs=doc.defaultView.getComputedStyle(el);
+    if(cs.display==='none'||cs.visibility==='hidden') continue;
+    if(effBg(el)) continue;                       // 有底色就安全
+    const L=lum(cs.color);
+    if(L===null) continue;
+    if(L<0.2) out.push(el);   // 深色文字贴暗页 → 看不清
+  }
+  return out;
+}
+function reportDarkRisk(){
+  if(!darkOn){ setVal([]); render(); return; }
+  applyDarkMode();
+  const bad=scanDarkRisk();
+  const rows=[];
+  rows.push({kind:bad.length?'err':'ok',text:bad.length?`深色模式：${bad.length} 处深色文字无底色，会看不清`:'深色模式：未发现深色文字裸贴暗底'});
+  if(bad.length) rows.push({kind:'warn',text:'→ 在左侧「主题管理 → 排版设置」把「页面底色」设为白色即可修复（代价：多一条白名单 GRAY 档提示）'});
+  setVal(rows);
+}
+$('#darkToggle').onclick=()=>{ darkOn=!darkOn; $('#darkToggle').setAttribute('aria-pressed',String(darkOn)); if(darkOn) reportDarkRisk(); else { setVal([]); render(); } };
+
+async function render(){
+  clearTimeout(timer);
+  timer=setTimeout(async()=>{
+    const markdown=$('#md').value, theme=currentTheme();
+    // 空文档不必打后端（否则会拿到 400，白刷一条控制台报错）
+    if(!markdown.trim()){
+      lastHtml=''; $('#pv').srcdoc=''; $('#pv').style.display='none'; $('#pvEmpty').style.display='';
+      $('#wc').textContent='字数 0'; $('#rt').textContent='0 分钟阅读';
+      setVal([{kind:'warn',text:'编辑器为空，输入 Markdown 后自动预览'}]);
+      return;
+    }
+    try{
+      const d=await api('/editor/api/render',{markdown,theme});
+      lastHtml=d.html;
+      $('#pv').srcdoc=d.html; $('#pv').style.display=''; $('#pvEmpty').style.display='none';
+      if(darkOn){ applyDarkMode(); reportDarkRisk(); }
+      const c=markdown.replace(/\s+/g,''); $('#wc').textContent='字数 '+c.length;
+      $('#rt').textContent=Math.max(1,Math.round(c.length/400))+' 分钟阅读';
+      const v=d.validation||{}; const issues=(v.issues||[]).map(i=>'['+i.rule+'] '+i.message);
+      const diags=(d.diagnostics||[]).map(x=>'⚠ [组件 '+x.component+'] '+x.message);
+      setVal([{kind:v.pass?'ok':'err',text:(v.pass?'✓ 渲染完成 · 校验通过':'✗ 校验未通过')+' · HTML '+d.html.length+' 字'},...diags.map(t=>({kind:'warn',text:t})),...issues.map(t=>({kind:v.pass?'warn':'err',text:t}))]);
+    }catch(e){ setVal([{kind:'err',text:'渲染失败：'+e.message}]); }
+  },300);
+}
+/* 校验条渲染 ──────────────────────────────────────────────────────────
+   产品返回的是「一条结果 + N 条诊断」。直接铺出来会变成一墙文字，颜色和语义就分不开了。
+   所以分两层：结论（✓/✗ + 字数）与统计（硬禁止 N / 警告 N）作为胶囊常驻，
+   诊断明细默认收起，点「展开」才铺出来——每条明细也带判定词，不靠颜色独立承载语义。
+
+   注意「灰档」（gray）是产品里的专有概念：特指微信草稿 API 实测会保留、
+   但读者端需真机核对的 CSS 属性。其余警告（如 image-count-zero）只能说「警告」，
+   不能借用「灰档」这个词，否则用户以为都是同一类问题。 */
+let valAll=[];      // 当前完整结果
+let valOpen=false;  // 明细是否展开
+
+function esc(s){ return String(s).replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+
+/* 判定词：只有真的 css-property-gray 才叫「灰档」 */
+function labelOf(text, fallback){
+  if(/\[css-property-banned\]|硬禁止/.test(text)) return {kind:'err',tag:'硬禁止'};
+  if(/\[css-property-gray\]|灰档/.test(text)) return {kind:'warn',tag:'灰档'};
+  if(fallback==='err') return {kind:'err',tag:'硬禁止'};
+  if(fallback==='warn') return {kind:'warn',tag:'警告'};
+  return {kind:fallback||'plain',tag:'提示'};
+}
+
+function renderVal(){
+  const box=$('#status');
+  if(!valAll.length){ box.innerHTML=''; return; }
+  const [head,...rest]=valAll;
+  const rows=rest.map(l=>({l,...labelOf(l.text,l.kind)}));
+  const hard=rows.filter(r=>r.kind==='err');
+  const gray=rows.filter(r=>r.tag==='灰档');
+  const warn=rows.filter(r=>r.kind==='warn'&&r.tag!=='灰档');
+
+  const chips=[];
+  chips.push('<span class="v '+head.kind+'"><b>'+esc(head.text)+'</b></span>');
+  if(hard.length+(head.kind==='err'?1:0)) chips.push('<span class="v err">'+(hard.length+(head.kind==='err'?1:0))+' 硬禁止</span>');
+  if(gray.length) chips.push('<span class="v warn">'+gray.length+' 灰档 · 需真机核对</span>');
+  if(warn.length) chips.push('<span class="v warn">'+warn.length+' 警告</span>');
+  if(!hard.length&&!gray.length&&!warn.length) chips.push('<span class="v ok">无诊断项</span>');
+
+  if(rows.length){
+    chips.push('<button class="more" type="button" id="valMore" aria-expanded="'+(valOpen?'true':'false')+'">'
+      +(valOpen?'收起明细':'展开明细 '+rows.length+' 条')+'</button>');
+  }
+  if(valOpen){
+    for(const r of rows){
+      chips.push('<span class="v wrap '+r.kind+'"><b>'+r.tag+'</b>'+esc(r.l.text)+'</span>');
+    }
+  }
+  box.innerHTML=chips.join('');
+  const more=$('#valMore');
+  if(more) more.onclick=()=>{ valOpen=!valOpen; renderVal(); };
+}
+
+function setVal(lines){ valAll=lines||[]; valOpen=false; renderVal(); }
+
+// ---- 工具栏 ----
+function wrap(before,after=before){
+  const ta=$('#md'), s=ta.selectionStart, e=ta.selectionEnd, v=ta.value;
+  pushUndo(v);
+  const sel=v.slice(s,e)||'文本';
+  const nv=v.slice(0,s)+before+sel+after+v.slice(e);
+  ta.value=nv; ta.selectionStart=s+before.length; ta.selectionEnd=s+before.length+sel.length; ta.focus(); render(); saveSnap();
+}
+function linePrefix(p){
+  const ta=$('#md'), s=ta.selectionStart, e=ta.selectionEnd, v=ta.value;
+  pushUndo(v);
+  const ls=v.lastIndexOf('\n',s-1)+1, le=v.indexOf('\n',e); const end=le<0?v.length:le;
+  const block=v.slice(ls,end); const nvBlock=block.split('\n').map(l=>p+l).join('\n');
+  ta.value=v.slice(0,ls)+nvBlock+v.slice(end); ta.selectionStart=ls; ta.selectionEnd=ls+nvBlock.length; ta.focus(); render(); saveSnap();
+}
+const ACTIONS={
+  bold:()=>wrap('**'), italic:()=>wrap('*'), strike:()=>wrap('~~'), highlight:()=>wrap('=='),
+  code:()=>wrap('`'), link:()=>wrap('[','](https://)'), img:()=>wrap('![','](https://)'),
+  sup:()=>wrap('^'), sub:()=>wrap('~'),
+  h1:()=>linePrefix('# '), h2:()=>linePrefix('## '), h3:()=>linePrefix('### '),
+  quote:()=>linePrefix('> '), ul:()=>linePrefix('- '), ol:()=>linePrefix('1. '),
+  hr:()=>{const ta=$('#md');pushUndo(ta.value);ta.value=(ta.value+'\n\n---\n');render();},
+  imgupload:()=>$('#bodyImgFile').click(),
+  clear:()=>{const ta=$('#md');const s=ta.selectionStart,e=ta.selectionEnd;pushUndo(ta.value);ta.value=ta.value.slice(0,s)+ta.value.slice(e);render();},
+  help:()=>toast('Markdown 支持：**加粗**、*斜体*、==高亮==、> 引用、- 列表、| 表格 |、`代码`、```代码块```；富组件见工具栏「富组件」按钮（:::card / :::gallery / :::carousel / :::reveal 等）'),
+  video:()=>insertVideoPlaceholder(),
+};
+$('#toolbar').addEventListener('click',e=>{
+  const btn=e.target.closest('.tb-btn'); const a=btn?.dataset?.a; if(!a) return;
+  if(a==='table'){ showTablePicker(btn); return; }
+  if(a==='heading'){ showTmPicker(btn, HEAD_OPTS); return; }
+  if(a==='list'){ showTmPicker(btn, LIST_OPTS); return; }
+  if(a==='callout'){ showTmPicker(btn, CALLOUT_OPTS); return; }
+  if(a==='mermaid'){ showTmPicker(btn, MERMAID_OPTS); return; }
+  if(a==='component'){ openComponentPicker(btn); return; }
+  if(ACTIONS[a]) ACTIONS[a]();
+});
+
+// ---- Typora 式表格选择器 ----
+const TBL_ROWS=8, TBL_COLS=10;
+function buildTablePicker(){
+  const p=$('#tablePicker');
+  let g='';
+  for(let r=1;r<=TBL_ROWS;r++) for(let c=1;c<=TBL_COLS;c++) g+='<div class="tcell" data-r="'+r+'" data-c="'+c+'"></div>';
+  p.innerHTML='<div class="tlabel" id="tlabel">选择表格大小</div><div class="tgrid">'+g+'</div>';
+  p.addEventListener('mouseover',e=>{ const c=e.target.closest('.tcell'); if(!c) return; const r=+c.dataset.r, col=+c.dataset.c; p.querySelectorAll('.tcell').forEach(x=>{ x.classList.toggle('on',(+x.dataset.r<=r && +x.dataset.c<=col)); }); $('#tlabel').textContent=col+' 列 × '+r+' 行'; });
+  p.addEventListener('click',e=>{ const c=e.target.closest('.tcell'); if(!c) return; const r=+c.dataset.r, col=+c.dataset.c; hideTablePicker(); insertTable(col, r); });
+}
+function showTablePicker(btn){
+  hideTablePicker();
+  const p=$('#tablePicker'); const rect=btn.getBoundingClientRect();
+  p.style.left=Math.min(rect.left, window.innerWidth-280)+'px';
+  p.style.top=(rect.bottom+4)+'px';
+  p.style.display='block';
+  p.querySelectorAll('.tcell').forEach(x=>x.classList.remove('on'));
+  $('#tlabel').textContent='选择表格大小';
+}
+function hideTablePicker(){ $('#tablePicker').style.display='none'; }
+document.addEventListener('click',e=>{ if(!e.target.closest('#tablePicker') && !e.target.closest('.tb-btn[data-a=table]')) hideTablePicker(); });
+
+// ---- 通用工具栏下拉（标题 / 列表 / 警告框） ----
+const HEAD_OPTS=[
+  {label:'一级标题（H1）', action:()=>linePrefix('# ')},
+  {label:'二级标题（H2）', action:()=>linePrefix('## ')},
+  {label:'三级标题（H3）', action:()=>linePrefix('### ')} ];
+const LIST_OPTS=[
+  {label:'无序列表', action:()=>linePrefix('- ')},
+  {label:'有序列表', action:()=>linePrefix('1. ')},
+  {label:'二级 · 无序', action:()=>linePrefix('  - ')},
+  {label:'二级 · 有序', action:()=>linePrefix('  1. ')} ];
+const CALLOUT_OPTS=[
+  {label:'提醒内容', action:()=>insertCallout('info','提醒内容')},
+  {label:'建议内容', action:()=>insertCallout('tip','建议内容')},
+  {label:'重要内容', action:()=>insertCallout('important','重要内容')},
+  {label:'警告内容', action:()=>insertCallout('warning','警告内容')},
+  {label:'注意内容', action:()=>insertCallout('note','注意内容')} ];
+
+// Mermaid 图模板：与用户在其它工具里的图型菜单一一对应。
+// 插入的是 :::mermaid 源码块（服务端渲染成图片后发布，见 docs/DESIGN.md §20.11）；
+// 光标停在第一处可编辑内容，写完源码预览处会自动出图。
+const MERMAID_BLOCK=(body, caret)=>insertBlock(':::mermaid{caption="图注（可删）"}\n'+body+'\n:::', caret);
+const MERMAID_OPTS=[
+  {label:'流程图', action:()=>MERMAID_BLOCK('graph TD\n  A[开始] --> B{判断}\n  B -->|是| C[结果一]\n  B -->|否| D[结果二]', 'B{判断}')},
+  {label:'时序图', action:()=>MERMAID_BLOCK('sequenceDiagram\n  participant A as 甲方\n  participant B as 乙方\n  A->>B: 请求\n  B-->>A: 响应', 'participant A as 甲方')},
+  {label:'类图', action:()=>MERMAID_BLOCK('classDiagram\n  class 动物 {\n    +名字\n    +叫()\n  }\n  动物 <|-- 狗', 'class 动物 {')},
+  {label:'甘特图', action:()=>MERMAID_BLOCK('gantt\n  title 项目计划\n  dateFormat YYYY-MM-DD\n  section 阶段一\n  任务 :a1, 2025-01-01, 7d', 'title 项目计划')},
+  {label:'思维导图', action:()=>MERMAID_BLOCK('mindmap\n  root((中心主题))\n    分支一\n    分支二', 'root((中心主题))')},
+  {label:'饼图', action:()=>MERMAID_BLOCK('pie title 占比\n  "第一项" : 40\n  "第二项" : 35\n  "第三项" : 25', 'pie title 占比')},
+  {label:'状态图', action:()=>MERMAID_BLOCK('stateDiagram-v2\n  [*] --> 状态一\n  状态一 --> 状态二: 触发\n  状态二 --> [*]', '状态一')},
+  {label:'ER 图', action:()=>MERMAID_BLOCK('erDiagram\n  用户 ||--o{ 订单 : 下单\n  用户 {\n    string 名字\n  }', '用户 ||--o{ 订单 : 下单')},
+  {label:'时间线', action:()=>MERMAID_BLOCK('timeline\n  title 大事记\n  2024 : 第一件事\n  2025 : 第二件事', 'title 大事记')},
+  {label:'用户旅程', action:()=>MERMAID_BLOCK('journey\n  title 使用旅程\n  section 开始\n    打开页面: 5: 用户\n    完成操作: 4: 用户', 'title 使用旅程')},
+];
+function showTmPicker(btn, options){
+  hideTmPicker();
+  const p=$('#tmPicker'); p._opts=options;
+  p.innerHTML=options.map((o,i)=>{
+    if(o.head) return '<div class="tm-head">'+esc(o.label)+'</div>';
+    return '<button class="tm-opt" data-i="'+i+'"'+(o.hint?' title="'+esc(o.hint)+'"':'')+'>'
+      +'<span>'+esc(o.label)+'</span>'
+      +(o.hint?'<span class="tm-sub">'+esc(o.hint)+'</span>':'')
+      +(o.onDelete?'<span class="tm-del" data-del="'+i+'" title="删除该自定义组件">×</span>':'')
+      +'</button>';
+  }).join('');
+  const rect=btn.getBoundingClientRect();
+  p.style.left=Math.min(rect.left, window.innerWidth-200)+'px';
+  p.style.top=(rect.bottom+4)+'px';
+  p.style.display='block';
+}
+function hideTmPicker(){ const p=$('#tmPicker'); if(p) p.style.display='none'; }
+$('#tmPicker').addEventListener('click',async e=>{
+  const del=e.target.closest('.tm-del');
+  if(del){
+    e.stopPropagation();
+    const o=($('#tmPicker')._opts||[])[+del.dataset.del];
+    if(!o||!o.onDelete) return;
+    hideTmPicker();
+    try{ await o.onDelete(); }catch(err){ toast("删除失败："+err.message,false); }
+    return;
+  }
+  const b=e.target.closest('.tm-opt'); if(!b) return;
+  const o=($('#tmPicker')._opts||[])[+b.dataset.i]; hideTmPicker(); if(o&&o.action) o.action();
+});
+document.addEventListener('click',e=>{ if(!e.target.closest('#tmPicker') && !e.target.closest('.tm-trigger')) hideTmPicker(); });
+// 在光标处插入一个 ::: 类型 标题 … ::: 警告框（光标停在内容占位符处）
+function insertCallout(type,title){
+  const ta=$('#md'), s=ta.selectionStart, e=ta.selectionEnd;
+  pushUndo(ta.value);
+  const block='\n::: '+type+' '+title+'\n内容……\n:::\n';
+  ta.value=ta.value.slice(0,s)+block+ta.value.slice(e);
+  const pos=s+block.indexOf('\n内容……')+1; ta.selectionStart=ta.selectionEnd=pos; render(); saveSnap(); ta.focus();
+}
+// ---- 富组件插入 ----
+// 在光标处插入一段块级内容，并把光标放到合适位置
+function insertBlock(block, caretMarker){
+  const ta=$('#md'), s=ta.selectionStart, e=ta.selectionEnd, v=ta.value;
+  pushUndo(v);
+  const lead = s>0 && v[s-1] !== '\n' ? '\n\n' : '';
+  const tail = v[e] && v[e] !== '\n' ? '\n\n' : '';
+  const text = lead + block + tail;
+  ta.value = v.slice(0,s) + text + v.slice(e);
+  const marker = caretMarker ? text.indexOf(caretMarker) : -1;
+  const pos = marker >= 0 ? s + marker : s + lead.length + block.length;
+  ta.selectionStart = ta.selectionEnd = pos;
+  ta.focus(); render(); saveSnap();
+}
+// 自定义组件的插入片段：用 defaults 预填参数
+function userComponentOpt(c){
+  const props=Object.entries(c.defaults||{}).map(([k,v])=>k+'="'+String(v).replace(/"/g,'&quot;')+'"').join(' ');
+  const open=':::'+c.name+(props?'{'+props+'}':'');
+  return {
+    label: c.name,
+    hint: c.description||'自定义组件',
+    onDelete: async ()=>{
+      await api('/editor/api/delete-component',{name:c.name});
+      toast('已删除自定义组件：'+c.name);
+    },
+    action: ()=>insertBlock(open+'\n正文内容……\n:::', '正文内容……'),
+  };
+}
+
+// 打开组件面板：内置组件 + 本地自定义组件（数量从 catalog 实时取，不写死）（实时从组件库读取）
+async function openComponentPicker(btn){
+  let user=[];
+  try{
+    const d=await api('/editor/api/components');
+    user=(d.components||[]).map(userComponentOpt);
+  }catch(e){ /* 组件库不可读时只显示内置组件 */ }
+  const opts=[
+    { label: "组件库预览…", hint: "看每个组件渲染后的效果", action: () => openComponentLibrary() },
+    { head: true, label: "插入组件" },
+    ...COMPONENT_OPTS,
+    ...(user.length ? [{ head: true, label: "我的组件" }, ...user] : []),
+  ];
+  showTmPicker(btn, opts);
+}
+
+const COMPONENT_OPTS=[
+  {label:'封面头图', action:()=>insertBlock(':::cover{title="文章标题" subtitle="SUBTITLE" author="作者" date="2025 · 09"}\n:::', '文章标题')},
+  {label:'目录（自动生成）', action:()=>insertBlock(':::toc{title="本文目录" max-level="2"}\n:::', '')},
+  {label:'章节标题（带序号）', action:()=>insertBlock(':::section-title{index="01" title="章节标题" subtitle="SUBTITLE"}\n:::', '章节标题')},
+  {label:'卡片', action:()=>insertBlock(':::card{title="卡片标题" tone="primary"}\n正文内容……\n:::', '卡片标题')},
+  {label:'提示框', action:()=>insertBlock(':::callout{type="tip" title="提示"}\n内容……\n:::', '提示')},
+  {label:'引用卡片', action:()=>insertBlock(':::quote{author="作者" source="出处"}\n引用内容……\n:::', '引用内容')},
+  {label:'分割线（波浪）', action:()=>insertBlock(':::divider{style="wave" tone="primary"}\n:::', '')},
+  {label:'标签徽章', action:()=>insertBlock(':::badge{text="标签" tone="primary"}\n:::', '标签')},
+  {label:'呼吸强调', action:()=>insertBlock(':::pulse{text="重点提示" tone=\"danger\"}\n:::', '重点提示')},
+  {label:'描边动画', action:()=>insertBlock(':::draw{shape="underline" tone="primary" text="重点句"}\n:::', '重点句')},
+  {label:'单图 + 图注', action:()=>insertBlock(':::image{src="https://" caption="图注文字" shadow="true"}\n:::', 'https://')},
+  {label:'图库（多图网格）', action:()=>insertBlock(':::gallery{cols="2" caption="图组说明"}\n![图一](https://)\n![图二](https://)\n:::', 'https://')},
+  {label:'自动轮播', action:()=>insertBlock(':::carousel{height="200" interval="3"}\n![一](https://)\n![二](https://)\n![三](https://)\n:::', 'https://')},
+  {label:'图文卡片', action:()=>insertBlock(':::image-card{src="https://" title="卡片标题" desc="一句话描述" layout="left"}\n:::', '卡片标题')},
+  {label:'时间线', action:()=>insertBlock(':::timeline{title="时间线"}\n- 2024 | 第一件事\n- 2025 | 第二件事\n:::', '时间线')},
+  {label:'步骤条', action:()=>insertBlock(':::steps{layout="vertical"}\n1. 第一步 | 说明\n2. 第二步 | 说明\n:::', '步骤条')},
+  {label:'左右对比', action:()=>insertBlock(':::compare{layout="stack"}\n| 旧方案 | 新方案 |\n| --- | --- |\n| A | B |\n:::', '旧方案')},
+  {label:'进度条', action:()=>insertBlock(':::progress{value="72" label="完成度"}\n:::', '完成度')},
+  {label:'点击展开', action:()=>insertBlock(':::reveal{label="点击查看答案"}\n答案内容……\n:::', '答案内容')},
+  {label:'局部背景块', action:()=>insertBlock(':::background{tone="primary" variant="gradient"}\n内容……\n:::', '内容……')},
+  {label:'整篇画布（包裹全文）', action:()=>insertBlock('::::canvas{tone="paper" padding="18px 16px"}\n\n（把正文放进这里）\n\n::::', '（把正文放进这里）')},
+  {label:'结尾卡片', action:()=>insertBlock(':::end-card{title="感谢阅读" footer="stylewx"}\n如果这篇对你有帮助，欢迎转发。\n:::', '感谢阅读')},
+];
+// 在光标处插入 cols 列 × rows 行（首行表头）的 Markdown 表格
+function insertTable(cols, rows){
+  const ta=$('#md'), s=ta.selectionStart;
+  pushUndo(ta.value);
+  const mk=(v)=>'| '+Array(cols).fill(v).join(' | ')+' |';
+  let t='\n'+mk('  ')+'\n'+('|'+Array(cols).fill(' --- ').join('|')+'|')+'\n';
+  for(let i=1;i<rows;i++) t+=mk('  ')+'\n';
+  t+='\n';
+  ta.value=ta.value.slice(0,s)+t+ta.value.slice(s);
+  const pos=s+t.length-1; ta.selectionStart=ta.selectionEnd=pos;
+  ta.focus(); render(); queueSave();
+  setVal([{kind:'ok',text:'已插入 '+cols+' 列 × '+rows+' 行表格（首行为表头）'}]);
+}
+
+// ---- 历史记录 (localStorage) ----
+let saveTimer;
+// 若当前 activeId 能找到，则更新该条目（并移到顶部）；否则新建一条
+function saveSnap(){
+  if(!$('#md').value.trim()) return;
+  const title=$('#title').value||((($('#md').value.match(/^#\s+(.+)$/m)||[])[1])||'未命名');
+  const md=$('#md').value, ts=Date.now();
+  let i = activeId!=null ? history.findIndex(h=>h.id===activeId) : -1;
+  if(i<0){
+    const item={id:'h'+ts+Math.random().toString(36).slice(2,6), title, md, ts};
+    history.unshift(item); activeId=item.id; i=0;
+  } else {
+    history[i]={ ...history[i], title, md, ts };
+    if(i>0){ history.unshift(history.splice(i,1)[0]); } // 更新后置顶
+  }
+  history=history.slice(0,20);
+  localStorage.setItem('mp-history',JSON.stringify(history));
+  renderHistory();
+  $('#saveState').textContent='已自动保存';
+  setTimeout(()=>{ if($('#saveState').textContent==='已自动保存') $('#saveState').textContent='就绪'; },1000);
+}
+// 防抖：停止输入约 1.2s 才写历史
+function queueSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(saveSnap,1200); }
+function renderHistory(filter){ const list=history.filter(h=>!filter||h.title.includes(filter)||h.md.includes(filter)); $('#histList').innerHTML=list.length?list.map(h=>'<div class="hist-item" data-id="'+h.id+'"><div class="h-title">'+esc(h.title)+'</div><div class="h-meta">'+new Date(h.ts).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})+'</div></div>').join(''):'<div class="empty"><span class="e-ico"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>'+(filter?'没有匹配「'+esc(filter)+'」的历史':'暂无历史，写下的第一篇会出现在这里')+'</div>'; }
+function esc(s){return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function loadHistory(){ const raw=JSON.parse(localStorage.getItem('mp-history')||'[]'); const seen=new Set(); const out=[]; for(const h of raw){ if(!h.id) h.id='h'+(h.ts||Date.now())+Math.random().toString(36).slice(2,6); if(!seen.has(h.title)){ seen.add(h.title); out.push(h); } } history=out; }
+$('#histList').addEventListener('click',e=>{const id=e.target.closest('.hist-item')?.dataset?.id; if(id){const h=history.find(x=>x.id===id); if(h){$('#md').value=h.md;$('#title').value=h.title;activeId=h.id;undoStack.length=0;redoStack.length=0;prevMd=$('#md').value;updateUndoBtns();render();}}});
+$('#search').addEventListener('input',e=>renderHistory(e.target.value.trim()));
+
+// ---- 新建 ----
+// ---- 导入 / 导出（HTML 反向还原 / Markdown 文件读写）----
+
+const IMP_LIMIT = 4 * 1024 * 1024;
+function impInfo(t){ const el=$('#impInfo'); if(el) el.textContent=t||''; }
+
+$('#importHtmlBtn').onclick=()=>{ $('#impText').value=''; impInfo(''); openModal('#impOverlay','#impText'); };
+$('#importMdBtn').onclick=()=>$('#mdFile').click();
+$('#impPickFile').onclick=()=>$('#htmlFile').click();
+
+$('#exportMdBtn').onclick=()=>{
+  const md=$('#md').value;
+  if(!md.trim()){ toast('当前没有内容可导出',false); return; }
+  const name=($('#title').value||(md.match(/^#\s+(.+)$/m)||[])[1]||'article').trim().replace(/[\\/:*?"<>|]/g,'_').slice(0,60);
+  const blob=new Blob([md],{type:'text/markdown;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name+'.md';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  toast('已导出 '+name+'.md');
+};
+
+$('#htmlFile').addEventListener('change',e=>{
+  const f=e.target.files && e.target.files[0]; e.target.value=''; if(!f) return;
+  if(f.size>IMP_LIMIT){ toast('文件过大（>4MB）',false); return; }
+  const r=new FileReader();
+  r.onload=()=>{ $('#impText').value=String(r.result||''); impInfo('已读取 '+f.name+'（'+Math.round(f.size/1024)+' KB）'); };
+  r.onerror=()=>toast('读取文件失败',false);
+  r.readAsText(f,'utf-8');
+});
+
+$('#mdFile').addEventListener('change',e=>{
+  const f=e.target.files && e.target.files[0]; e.target.value=''; if(!f) return;
+  if(f.size>IMP_LIMIT){ toast('文件过大（>4MB）',false); return; }
+  const r=new FileReader();
+  r.onload=()=>{
+    pushUndo($('#md').value);
+    const raw=String(r.result||'');
+    // 导入的 md 可能带 front-matter（title / theme）——剥掉它，否则 `---` 会渲染成分割线
+    const {meta,body}=splitArticleMeta(raw);
+    $('#md').value=body; prevMd=body; activeId=null; linkedFile=null;
+    if(meta.title) $('#title').value=meta.title;
+    const h=(body.match(/^#\s+(.+)$/m)||[])[1]; if(h && !$('#title').value) $('#title').value=h.trim();
+    const picked=applyTheme(meta.theme);
+    const hint=meta.theme?(picked?('（主题：'+meta.theme+'）'):('（主题「'+meta.theme+'」不存在）')):'';
+    fileDirty=true; updateSaveFileBtn();
+    updateUndoBtns(); render(); saveSnap();
+    toast('已导入 '+f.name+hint);
+  };
+  r.onerror=()=>toast('读取文件失败',false);
+  r.readAsText(f,'utf-8');
+});
+
+$('#impRun').onclick=async()=>{
+  const html=$('#impText').value.trim();
+  if(!html){ toast('请先粘贴 HTML 或选择文件',false); return; }
+  busy($('#impRun'),true); impInfo('正在解析…');
+  try{
+    const d=await api('/editor/api/import-html',{html});
+    const md=d.markdown||'';
+    if(!md.trim()){ toast('未能从 HTML 中提取到内容',false); impInfo('未提取到内容'); return; }
+    pushUndo($('#md').value);
+    $('#md').value=md; prevMd=md; activeId=null; updateUndoBtns();
+    if(d.title) $('#title').value=d.title;
+    closeModal('#impOverlay'); render(); saveSnap();
+    const comps=d.components||[]; const warns=d.warnings||[];
+    toast('已导入：还原 '+comps.length+' 个组件'+(warns.length?'（'+warns.length+' 条提示）':''));
+    setVal([{kind:'ok',text:'已导入 HTML：还原 '+comps.length+' 个富组件'},...comps.slice(0,8).map(c=>({kind:'warn',text:':::'+c.name+'（正文：'+c.bodyFrom+'）'})),...warns.map(w=>({kind:'warn',text:w}))]);
+  }catch(e){ toast('导入失败：'+e.message,false); impInfo('解析失败'); }
+  finally{ busy($('#impRun'),false); }
+};
+
+document.querySelectorAll('[data-close-imp]').forEach(b=>b.onclick=()=>closeModal('#impOverlay'));
+document.querySelectorAll('[data-close-video]').forEach(b=>b.onclick=()=>closeModal('#videoOverlay'));
+// ---- 组件库预览页 ----
+let compPreviews=[]; let compCurrent=null;
+// 参数编辑状态：base=示例里原本的值（undefined 表示示例没写）、init=初次展示值、values=当前值。
+// 「改过」的判据是 values !== init：只把用户真动过的参数写回 markdown，
+// 没动过的 token 原样保留（含原本的引号写法），生成的示例不会被整体重排。
+let compBase={}, compInit={}, compValues={};
+let compDiags=[]; let compTimer=null;
+
+const COMP_FRAME_CSS='<style>body{margin:0;padding:14px;background:#fff;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}</style>';
+function compFrame(html){ return '<html><head><meta charset="utf-8">'+COMP_FRAME_CSS+'</head><body>'+(html||'')+'</body></html>'; }
+function escAttr(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// 与 packages/service/src/previews.ts 的 propString 同一套规则：纯 [A-Za-z0-9._-] 不加引号
+function compPropToken(k,v){ return /^[A-Za-z0-9._-]+$/.test(v) ? k+'='+v : k+'="'+String(v).replace(/"/g,'&quot;')+'"'; }
+// 与 packages/components/src/parse.ts 的 OPEN_RE / 参数正则保持一致
+const COMP_OPEN_RE=/^[ \t]{0,3}(:{3,})\s*([a-zA-Z][a-zA-Z0-9-]*)(?:\s*\{([^}]*)\})?\s*(.*)$/;
+const COMP_PROP_RE=/([a-zA-Z][a-zA-Z0-9-]*)(?:\s*=\s*("([^"]*)"|'([^']*)'|([^\s"']+)))?/g;
+
+function compParseSample(sample){
+  const lines=String(sample||'').split('\n');
+  const m=COMP_OPEN_RE.exec(lines[0]||'');
+  if(!m) return null;
+  const inner=m[3]||'', props={};
+  COMP_PROP_RE.lastIndex=0; let t;
+  while((t=COMP_PROP_RE.exec(inner))!==null){
+    props[(t[1]||'').toLowerCase()]=t[2]===undefined?'true':(t[3]!==undefined?t[3]:(t[4]!==undefined?t[4]:t[5]));
+  }
+  return { fence:m[1], name:(m[2]||'').toLowerCase(), inner, tail:lines.slice(1).join('\n'), props };
+}
+// 当前参数 → markdown（组件本体，不含预览前缀）
+function compBuildSample(){
+  if(!compCurrent) return '';
+  const parsed=compParseSample(compCurrent.sample||'');
+  if(!parsed) return compCurrent.sample||'';
+  const changed={};
+  Object.keys(compValues).forEach(k=>{ if(compValues[k]!==compInit[k]) changed[k]=compValues[k]; });
+  const out=[], seen={};
+  COMP_PROP_RE.lastIndex=0; let t;
+  while((t=COMP_PROP_RE.exec(parsed.inner))!==null){
+    const key=(t[1]||'').toLowerCase(); seen[key]=1;
+    if(key in changed){ if(changed[key]!=='') out.push(compPropToken(key,changed[key])); }
+    else out.push(t[0]);
+  }
+  Object.keys(changed).forEach(k=>{ if(!seen[k] && changed[k]!=='') out.push(compPropToken(k,changed[k])); });
+  return parsed.fence+parsed.name+(out.length?'{'+out.join(' ')+'}':'')+'\n'+parsed.tail;
+}
+function compDirtyCount(){ return Object.keys(compValues).filter(k=>compValues[k]!==compInit[k]).length; }
+
+// 参数表：枚举/布尔点 chip，其余给输入框。取值列表来自组件目录的 props[].type。
+function compRenderParams(c){
+  const box=$('#compParams');
+  const props=c.props||[];
+  if(!props.length){
+    box.style.display='none'; box.innerHTML='';
+    // 自定义组件没声明参数时给一句话，避免留白看着像坏了
+    compPaintNotes('自定义组件未声明参数：参数名以模板里的占位符为准，可在下方「示例 Markdown」里看到实际写法。');
+    return;
+  }
+  const choicesOf=t=>{
+    if(t==='boolean') return ['true','false'];
+    if(t.indexOf('|')>=0) return t.split('|').map(s=>s.trim()).filter(Boolean);
+    return null;
+  };
+  const rows=props.map(p=>{
+    const key=p.name.toLowerCase(), list=choicesOf(p.type||''), cur=compValues[key]||'';
+    const val=list
+      ? list.map(v=>'<button type="button" class="comp-choice'+(v===cur?' on':'')+'" data-k="'+escAttr(key)+'" data-v="'+escAttr(v)+'">'+esc(v)+'</button>').join('')
+      : '<input class="comp-input" data-k="'+escAttr(key)+'" value="'+escAttr(cur)+'" spellcheck="false" /> '
+        +'<span class="comp-type">'+esc(p.type||'text')+'</span>';
+    const def=p.default?'<code class="comp-pdef">'+esc(p.default)+'</code>':'<span class="comp-type">无默认</span>';
+    return '<tr data-row="'+escAttr(key)+'"><td><code class="comp-pname">'+esc(p.name)+'</code></td><td>'+val+'</td><td>'+def+'</td><td>'+esc(p.description||'无说明')+'</td></tr>';
+  }).join('');
+  box.innerHTML='<table><thead><tr><th>参数</th><th>取值（可直接改）</th><th>默认</th><th>说明</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  box.style.display='';
+  compPaintRows(); compPaintNotes();
+}
+function compPaintRows(){
+  document.querySelectorAll('#compParams tr[data-row]').forEach(tr=>{
+    const k=tr.dataset.row;
+    tr.querySelectorAll('.comp-choice').forEach(ch=>ch.classList.toggle('on', ch.dataset.v===compValues[k]));
+    tr.classList.toggle('dirty', compValues[k]!==compInit[k]);
+  });
+}
+// notes（组件自带的实现说明）+ 诊断（如模板缺参数）一处输出
+function compPaintNotes(extra){
+  const el=$('#compNotes'), parts=[];
+  if(compCurrent&&compCurrent.notes) parts.push('<div>'+esc(compCurrent.notes)+'</div>');
+  if(extra) parts.push('<div>'+esc(extra)+'</div>');
+  (compDiags||[]).forEach(d=>{ if(d.level==='info') return; parts.push('<div class="comp-diag'+(d.level==='error'?' err':'')+'">'+esc(d.message)+'</div>'); });
+  el.innerHTML=parts.join(''); el.style.display=parts.length?'':'none';
+}
+function compSyncDirty(){
+  const n=compDirtyCount();
+  const b=$('#compGen');
+  b.textContent=n>0?('生成示例 · '+n+' 处改动'):'生成示例';
+  b.classList.toggle('dirty', n>0);
+  $('#compReset').disabled=!n;
+}
+function compSetPreview(html){ $('#compPreview').srcdoc=compFrame(html); }
+// 改动后防抖重渲染：只重渲染组件本体（预览前缀接回去），占位图交给服务端替换，否则改参数就变裂图
+function compRenderLive(){
+  clearTimeout(compTimer);
+  compTimer=setTimeout(async()=>{
+    if(!compCurrent) return;
+    const md=(compCurrent.previewPrefix||'')+compBuildSample();
+    try{
+      const d=await api('/editor/api/render',{markdown:md,theme:currentTheme(),placeholders:true});
+      compSetPreview(d.html||'');
+      compDiags=d.diagnostics||[];
+    }catch(e){ compDiags=[]; compSetPreview('<p style="color:#888;font-size:13px">渲染失败：'+esc(e.message)+'</p>'); }
+    compPaintNotes();
+  },240);
+}
+function compSelect(name){
+  const c=compPreviews.find(x=>x.name===name); if(!c) return;
+  compCurrent=c; clearTimeout(compTimer);
+  // 初始化参数：示例里写的值优先，其次目录默认值（两者都不分大小写）
+  const parsed=compParseSample(c.sample||'');
+  compBase={}; compInit={}; compValues={};
+  (c.props||[]).forEach(p=>{
+    const key=p.name.toLowerCase();
+    const fromSample=parsed&&parsed.props[key]!==undefined?parsed.props[key]:undefined;
+    compBase[key]=fromSample;
+    compInit[key]=fromSample!==undefined?fromSample:(p.default!==undefined?String(p.default):'');
+    compValues[key]=compInit[key];
+  });
+  compDiags=c.diagnostics||[];
+  $('#compName').innerHTML=':::'+esc(c.name)+(c.origin==='user'?'<code>自定义</code>':'');
+  $('#compDesc').textContent=c.summary||'';
+  $('#compSlots').textContent='可定制部位：'+(c.slots||['root','*']).join(' / ');
+  compRenderParams(c);
+  $('#compSrc').textContent=c.sample||'';
+  const srcBox=document.querySelector('.comp-src'); if(srcBox) srcBox.open=false;
+  $('#compEmpty').style.display='none';
+  const f=$('#compPreview'); f.style.display='';
+  f.srcdoc=compFrame(c.html||'');
+  $('#compInsert').disabled=false; $('#compCopy').disabled=false; $('#compGen').disabled=false;
+  compSyncDirty();
+  compRenderList($('#compSearch').value);
+}
+// 参数改了就只刷新那一行 + 防抖重渲染，不重建表格（否则输入框会丢焦点）
+$('#compParams').addEventListener('click',e=>{
+  const b=e.target.closest('.comp-choice'); if(!b||!b.dataset.k) return;
+  compValues[b.dataset.k]=b.dataset.v;
+  compPaintRows(); compSyncDirty(); compRenderLive();
+});
+$('#compParams').addEventListener('input',e=>{
+  const i=e.target.closest('.comp-input'); if(!i||!i.dataset.k) return;
+  compValues[i.dataset.k]=i.value;
+  compPaintRows(); compSyncDirty(); compRenderLive();
+});
+function compRenderList(filter){
+  const kw=(filter||'').trim().toLowerCase();
+  const hit=(c)=>!kw || c.name.toLowerCase().includes(kw) || (c.summary||'').toLowerCase().includes(kw);
+  const builtin=compPreviews.filter(c=>c.origin!=='user' && hit(c));
+  const user=compPreviews.filter(c=>c.origin==='user' && hit(c));
+  const item=(c)=>'<button class="comp-item'+(compCurrent&&compCurrent.name===c.name?' on':'')+'" data-name="'+esc(c.name)+'">'+esc(c.name)+'<span class="sub">'+esc(c.summary||'')+'</span></button>';
+  let html='';
+  if(builtin.length) html+='<div class="comp-group">内置组件（'+builtin.length+'）</div>'+builtin.map(item).join('');
+  if(user.length) html+='<div class="comp-group">我的组件（'+user.length+'）</div>'+user.map(item).join('');
+  if(!html) html='<div class="comp-empty">没有匹配的组件</div>';
+  $('#compList').innerHTML=html;
+}
+async function openComponentLibrary(){
+  openModal('#compOverlay','#compSearch');
+  $('#compEmpty').style.display=''; $('#compEmpty').textContent='正在渲染…';
+  $('#compPreview').style.display='none';
+  $('#compList').innerHTML='';
+  $('#compInsert').disabled=true; $('#compCopy').disabled=true; $('#compGen').disabled=true; $('#compReset').disabled=true;
+  try{
+    const d=await api('/editor/api/component-previews',{theme:currentTheme()});
+    compPreviews=d.previews||[];
+    $('#compCount').textContent='当前主题：'+$('#themeSel').value+' · 共 '+compPreviews.length+' 个';
+    compRenderList('');
+    if(compPreviews[0]) compSelect(compPreviews[0].name);
+    else {
+      $('#compEmpty').textContent='组件库为空';
+    }
+  }catch(e){ $('#compEmpty').textContent='渲染失败：'+e.message; }
+}
+$('#navComp').onclick=()=>{ nav('navComp'); openComponentLibrary(); };
+$('#compSearch').addEventListener('input',e=>compRenderList(e.target.value));
+$('#compList').addEventListener('click',e=>{
+  const b=e.target.closest('.comp-item'); if(!b) return;
+  compSelect(b.dataset.name);
+});
+$('#compInsert').onclick=()=>{
+  if(!compCurrent) return;
+  // 插入的是「当前参数」的版本，与右侧预览一致，而不是原示例
+  const md=compBuildSample();
+  insertBlock(md, '');
+  $('#compSrc').textContent=md;
+  closeModal('#compOverlay'); toast('已插入 :::'+compCurrent.name);
+};
+// 把改过的参数重组回 markdown 写进下方代码块（与原始示例对比）
+$('#compGen').onclick=()=>{
+  if(!compCurrent) return;
+  $('#compSrc').textContent=compBuildSample();
+  const box=document.querySelector('.comp-src'); if(box) box.open=true;
+  toast(compDirtyCount()>0?('已按当前参数生成示例（'+compDirtyCount()+' 处改动）'):'已生成示例');
+};
+$('#compCopy').onclick=async()=>{
+  if(!compCurrent) return;
+  try{ await navigator.clipboard.writeText(compBuildSample()); toast('已复制示例'); }
+  catch(e){ toast('复制失败：'+e.message,false); }
+};
+$('#compReset').onclick=()=>{
+  if(!compCurrent) return;
+  compValues=Object.assign({},compInit);
+  compRenderParams(compCurrent);
+  compSyncDirty();
+  compRenderLive();
+  toast('已恢复示例原值');
+};
+document.querySelectorAll('[data-close-comp]').forEach(b=>b.onclick=()=>closeModal('#compOverlay'));
+$('#compOverlay').addEventListener('click',e=>{ if(e.target.id==='compOverlay') closeModal('#compOverlay'); });
+
+// ---- 主题预览页 ----
+let thPreviews=[]; let thCurrent=null;
+function thRenderList(filter){
+  const kw=(filter||'').trim().toLowerCase();
+  const hit=(t)=>!kw || t.name.toLowerCase().includes(kw) || (t.description||'').toLowerCase().includes(kw);
+  const saved=thPreviews.filter(t=>t.origin==='saved'&&hit(t));
+  const presets=thPreviews.filter(t=>t.origin!=='saved'&&hit(t));
+  const dots=(t)=>'<span class="th-inline" style="display:inline-flex;gap:4px;margin-left:6px">'+(t.swatches||[]).slice(0,3).map(s=>'<span class="th-dot" style="background:'+s.color+'"></span>').join('')+'</span>';
+  const item=(t)=>'<button class="comp-item'+(thCurrent&&thCurrent.name===t.name?' on':'')+'" data-name="'+esc(t.name)+'" title="'+esc(t.description||'')+'">'+esc(t.name)+dots(t)+'<span class="sub">'+esc((t.description||'').slice(0,72))+'</span></button>';
+  let html='';
+  if(saved.length) html+='<div class="comp-group">我的主题（'+saved.length+'）</div>'+saved.map(item).join('');
+  if(presets.length) html+='<div class="comp-group">内置主题（'+presets.length+'）</div>'+presets.map(item).join('');
+  if(!html) html='<div class="comp-empty">没有匹配的主题</div>';
+  $('#thList').innerHTML=html;
+}
+function thSelect(name){
+  const t=thPreviews.find(x=>x.name===name); if(!t) return;
+  thCurrent=t;
+  $('#thName').innerHTML=''+esc(t.name)+(t.origin==='saved'?'<code>我的主题</code>':'<code>内置</code>');
+  $('#thDesc').textContent=t.description||'';
+  $('#thMeta').textContent='统一示例文章 · 所有主题渲染同一份内容';
+  $('#thSwatches').innerHTML=(t.swatches||[]).map(s=>'<span class="th-swatch"><i style="background:'+s.color+'"></i>'+esc(s.label)+' <span class="hex">'+esc(s.color)+'</span></span>').join('');
+  $('#thFont').textContent='字体：'+(t.font||'');
+  const f=$('#thPreview'); f.style.display='';
+  f.srcdoc='<html><head><meta charset="utf-8"></head><body style="margin:0;padding:26px 30px;background:#fff;font-size:15px;line-height:1.7">'+(t.html||'')+'</body></html>';
+  $('#thApply').disabled=false; $('#thCopyName').disabled=false;
+  thRenderList($('#thSearch').value);
+}
+async function openThemeLibrary(){
+  openModal('#themeOverlay','#thSearch');
+  $('#thEmpty').style.display=''; $('#thEmpty').textContent='正在渲染…';
+  $('#thPreview').style.display='none';
+  $('#thList').innerHTML='';
+  $('#thApply').disabled=true; $('#thCopyName').disabled=true;
+  try{
+    const d=await api('/editor/api/theme-previews',{});
+    thPreviews=d.previews||[];
+    $('#thCount').textContent='共 '+thPreviews.length+' 个主题';
+    thRenderList('');
+    if(thPreviews[0]) thSelect(thPreviews[0].name);
+    else $('#thEmpty').textContent='主题库为空';
+  }catch(e){ $('#thEmpty').textContent='渲染失败：'+e.message; }
+}
+$('#thPreviewBtn').onclick=()=>{ $('#themePanel').open=false; openThemeLibrary(); };
+$('#thSearch').addEventListener('input',e=>thRenderList(e.target.value));
+$('#thList').addEventListener('click',e=>{
+  const b=e.target.closest('.comp-item'); if(!b) return;
+  thSelect(b.dataset.name);
+});
+$('#thApply').onclick=()=>{
+  if(!thCurrent) return;
+  const sel=$('#themeSel'); sel.value=thCurrent.name; sel.dispatchEvent(new Event('change'));
+  closeModal('#themeOverlay'); toast('已应用主题：'+thCurrent.name);
+};
+$('#thCopyName').onclick=async()=>{
+  if(!thCurrent) return;
+  try{ await navigator.clipboard.writeText(thCurrent.name); toast('已复制主题名'); }
+  catch(e){ toast('复制失败：'+e.message,false); }
+};
+document.querySelectorAll('[data-close-th]').forEach(b=>b.onclick=()=>closeModal('#themeOverlay'));
+$('#themeOverlay').addEventListener('click',e=>{ if(e.target.id==='themeOverlay') closeModal('#themeOverlay'); });
+
+// 主题切换后，组件库预览跟随刷新（下次打开即为当前主题）
+
+// ---- 通过 ?file= 打开项目里的 Markdown（save_article 交接入口）----
+// ---- 通过 ?file= / ?theme= 打开项目里的 Markdown（save_article 交接入口）----
+// 与服务端 packages/service/src/front-matter.ts 语义保持一致：
+// 只认 title / theme 两个键；块内没有已知键时当普通分割线，原样返回。
+const FM_RE=/^\uFEFF?---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/;
+function splitArticleMeta(text){
+  const m=FM_RE.exec(text); if(!m) return {meta:{},body:text};
+  const meta={};
+  m[1].split(/\r?\n/).forEach(line=>{
+    const s=line.trim(); if(!s||s[0]==='#') return;
+    const i=s.indexOf(':'); if(i<0) return;
+    const k=s.slice(0,i).trim(); let v=s.slice(i+1).trim();
+    if(v.length>=2&&((v[0]==='"'&&v.endsWith('"'))||(v[0]==="'"&&v.endsWith("'")))) v=v.slice(1,-1);
+    if((k==='title'||k==='theme')&&v) meta[k]=v;
+  });
+  if(!Object.keys(meta).length) return {meta:{},body:text};
+  return {meta,body:text.slice(m[0].length).replace(/^\s*\n+/,'')};
+}
+
+/** 选中指定主题（不存在则不动，避免 select 变空值）。返回是否成功。 */
+function applyTheme(name){
+  if(!name) return false;
+  const sel=$('#themeSel');
+  if(![...sel.options].some(o=>o.value===name)) return false;
+  sel.value=name; sel.dispatchEvent(new Event('change'));
+  return true;
+}
+
+async function loadFromQuery(){
+  const qs=new URLSearchParams(location.search);
+  const file=qs.get("file");
+  const qTheme=qs.get("theme");
+  if(!file){ if(qTheme) applyTheme(qTheme); return; }
+  try{
+    const d=await api("/editor/api/load-file?file="+encodeURIComponent(file));
+    if(!d.markdown) return;
+    $("#md").value=d.markdown; prevMd=d.markdown; linkedFile=d.path||file;
+    // 文件里没写标题就清空，避免残留上一个草稿的标题
+    $("#title").value=d.title||'';
+    // 主题优先级：.md front-matter > ?theme= 参数
+    const theme=d.theme||qTheme;
+    const picked=applyTheme(theme);
+    // 必须放在 applyTheme 之后：applyTheme 会派发 change，而 change 已挂钩 markFileDirty，
+    // 否则「刚打开就显示未保存」。
+    fileDirty=false; updateSaveFileBtn();
+    render(); saveSnap();
+    setVal([{kind:"ok",text:"已从文件载入："+(d.path||file)},
+            theme?{kind:picked?"ok":"warn",text:picked?("主题："+theme):("主题「"+theme+"」不存在，已用默认主题")}:null].filter(Boolean));
+    toast(picked?("已载入 · "+theme):("已载入 "+(d.title||"文章")));
+  }catch(e){ toast("载入文件失败："+e.message,false); }
+}
+$('#newBtn').onclick=()=>{ $('#md').value=''; $('#title').value=''; undoStack.length=0;redoStack.length=0;prevMd='';updateUndoBtns(); $('#pv').srcdoc=''; $('#pv').style.display='none'; $('#pvEmpty').style.display=''; activeId=null; setVal([{kind:'warn',text:'新建文章：开始输入 Markdown'} ]); $('#md').focus(); };
+
+// ---- 主题操作 ----
+$('#genBtn').onclick=async()=>{ busy($('#genBtn'),true); toast('正在生成主题（LLM）…'); try{ const d=await api('/editor/api/generate',{article:$('#md').value,save:true}); if(d.theme&&d.theme.name){await loadThemes();$('#themeSel').value=d.theme.name;} toast('已生成'+(d.saved?'并保存':'')+'：'+(d.theme&&d.theme.name)); render(); }catch(e){ toast('生成失败：'+e.message,false); } finally{ busy($('#genBtn'),false); } $('#themePanel').open=false; };
+$('#saveBtn').onclick=async()=>{ const name=$('#themeSel').value; const th=themesCache.find(t=>t.name===name); if(!th)return toast('请先选择主题',false); busy($('#saveBtn'),true); try{ await api('/editor/api/savetheme',{theme:th}); await loadThemes(); $('#themeSel').value=name; toast('已保存：'+name); }catch(e){ toast('保存失败：'+e.message,false); } finally{ busy($('#saveBtn'),false); } $('#themePanel').open=false; };
+$('#valBtn').onclick=async()=>{ const md=$('#md').value,theme=currentTheme(); try{ const d=await api('/editor/api/render',{markdown:md,theme}); const v=d.validation||{}; const issues=(v.issues||[]).map(i=>'['+i.rule+'] '+i.message); setVal([{kind:v.pass?'ok':'err',text:v.pass?'✓ 校验通过':'✗ 校验未通过'},...issues.map(t=>({kind:v.pass?'warn':'err',text:t}))]); toast(v.pass?'校验通过':'校验未通过',v.pass); }catch(e){ toast('校验失败：'+e.message,false); } };
+
+// ---- 写回 .md 文件（Ctrl+S）----
+// 只有通过 ?file= 打开、或「另存为」过一次，才有 linkedFile；有它才能原地保存。
+// 刻意不做自动写盘：编辑器里的改动先落到 localStorage 快照，写回文件必须由人触发。
+let fileDirty=false;
+function markFileDirty(){ if(!fileDirty){ fileDirty=true; updateSaveFileBtn(); } }
+function updateSaveFileBtn(){
+  const has=!!linkedFile, ready=!!$('#md').value.trim();
+  const label=$('#saveLabel');
+  // 入口改成纯图标后，状态用「•」缀在 tooltip 里；label 只在未关联文件时提示「另存为…」
+  if(label) label.textContent = has ? (fileDirty?'•':'') : '另存为…';
+  const sum=document.querySelector('#savePanel > summary');
+  if(sum) sum.title = (has ? ('写回 '+linkedFile+'（Ctrl+S）') : '保存为新文件（Ctrl+S）') + (fileDirty?' · 有未保存改动':'');
+  const path=$('#filePath');
+  if(path){ path.textContent = linkedFile || '（未关联文件，下面「另存为…」选择位置）'; path.title = linkedFile || ''; }
+  const save=$('#saveFileBtn'); if(save) save.disabled = !has || !ready;
+  const saveAs=$('#saveAsBtn'); if(saveAs) saveAs.disabled = !ready;
+}
+async function saveToFile(forcePrompt, force){
+  const md=$('#md').value;
+  if(!md.trim()) return toast('正文为空，不写入文件',false);
+  // 有关联文件且不是「另存为」→ 原地写回；否则打开弹窗选位置。
+  // 不用 window.prompt：会被浏览器「阻止此页面创建更多对话框」静默禁掉（点了没反应）。
+  if(forcePrompt || !linkedFile){ openSaveAs(); return; }
+  return writeBack(linkedFile, force);
+}
+async function writeBack(target, force){
+  const md=$('#md').value;
+  if(!md.trim()) return toast('正文为空，不写入文件',false);
+  const btn=$('#saveFileBtn'); busy(btn,true);
+  const payload={path:target,markdown:md,title:$('#title').value,theme:currentTheme()};
+  let d;
+  try{
+    try{
+      d=await api('/editor/api/save-file',payload);
+    }catch(e){
+      // 服务端的「缩水护栏」：新内容比原文件短很多时拒绝覆盖。这里再问一次人。
+      if(e && e.code==='content_shrunk' && !force){
+        const ok=window.confirm('新内容比原文件短很多，确定要覆盖吗？\n\n'+(e.message||'')+'\n\n（点「取消」则原文件保持不变）');
+        if(!ok){ toast('已取消，原文件未改动'); return; }
+        d=await api('/editor/api/save-file',{...payload,force:true});
+      } else throw e;
+    }
+    linkedFile=d.path; fileDirty=false;
+    setVal([{kind:'ok',text:'已写入 '+d.path},
+            {kind:'ok',text:'主题：'+(d.theme||'(未指定，未写入 front-matter)')}]);
+    toast('已保存 '+String(d.path).split(/[\\/]/).pop());
+  }catch(e){ toast('保存失败：'+e.message,false); }
+  finally{ busy(btn,false); updateSaveFileBtn(); $('#savePanel').open=false; }
+}
+
+// ---- 另存为弹窗：文件名 + 选位置（像文件管理器一样，可从「此电脑」逐层进入） ----
+// 服务端把浏览/写入范围限制在 writeRoots()（文章根目录 + 用户主目录，可用
+// STYLEWX_WRITE_ROOTS 追加）内：系统位置（C:\Windows 等）天然在主目录外，不可达。
+let saveAsDir=''; // 当前浏览的目录（绝对路径；'' = 「此电脑」层，列出可用的根）
+let saveAsRoots=[]; // 服务端告知的允许根
+const SAVE_AS_DIR_ICON='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+const SAVE_AS_FILE_ICON='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
+const SAVE_AS_DRIVE_ICON='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></svg>';
+function openSaveAs(){
+  const md=$('#md').value;
+  if(!md.trim()) return toast('正文为空，不写入文件',false);
+  const guess=((($('#title').value||'未命名').replace(/[\\/:*?"<>|]/g,'').trim())||'未命名')+'.md';
+  $('#saveAsName').value = guess;
+  openModal('#saveAsOverlay','#saveAsName');
+  // 上次保存过的位置优先 —— 行为对齐文件管理器的「记忆位置」
+  browseSaveAs(linkedFile ? parentDir(linkedFile) : '');
+}
+function parentDir(p){
+  const norm=String(p).replace(/[\\/]+$/,'');
+  const cut=Math.max(norm.lastIndexOf('\\'),norm.lastIndexOf('/'));
+  if(cut<=0) return '';
+  // 盘根（如 D:\）再往上一级就是「此电脑」
+  const parent=norm.slice(0,cut);
+  return /^[A-Za-z]:$/.test(parent) ? parent+String.fromCharCode(92) : parent;
+}
+async function browseSaveAs(dir){
+  try{
+    const d=await api('/editor/api/list-dir?dir='+encodeURIComponent(dir||''));
+    saveAsDir=d.dir||''; saveAsRoots=d.roots||[];
+    renderSaveAsCrumbs();
+    const list=$('#saveAsList');
+    const rows=[];
+    if(d.drives){
+      // 「此电脑」层：列出所有允许写入的根（盘/主目录）
+      for(const root of d.dirs){
+        rows.push('<button class="sa-row sa-dir" data-dir="'+escAttr(root)+'">'+SAVE_AS_DRIVE_ICON+esc(root)+'</button>');
+      }
+    } else {
+      const parent=parentDir(d.dir);
+      rows.push('<button class="sa-row sa-dir" data-up="'+escAttr(parent)+'">'+SAVE_AS_DIR_ICON+'上一级</button>');
+      for(const dirName of d.dirs){
+        rows.push('<button class="sa-row sa-dir" data-dir="'+escAttr(joinPath(d.dir,dirName))+'">'+SAVE_AS_DIR_ICON+esc(dirName)+'</button>');
+      }
+      for(const f of d.files){
+        rows.push('<button class="sa-row sa-file sa-pick" data-file="'+escAttr(f)+'">'+SAVE_AS_FILE_ICON+esc(f)+'<span class="sa-file-hint">点击选用此名</span></button>');
+      }
+    }
+    list.innerHTML = rows.length ? rows.join('') : '<div class="sa-empty">这里还没有文章。直接在上方输入文件名即可保存。</div>';
+  }catch(e){ toast('读取目录失败：'+e.message,false); }
+}
+function joinPath(dir,name){
+  const sepChar=dir.includes('\\')||/^[A-Za-z]:/.test(dir)?String.fromCharCode(92):'/';
+  return dir.replace(/[\\/]+$/,'')+sepChar+name;
+}
+function renderSaveAsCrumbs(){
+  let h='<button data-up="">此电脑</button>';
+  if(saveAsDir){
+    // 按分隔符逐层展开面包屑；盘根单独成一个可点层
+    const norm=saveAsDir.replaceAll(String.fromCharCode(92),'/');
+    const parts=norm.split('/').filter(Boolean);
+    let acc=parts[0].endsWith(':')?parts[0]+String.fromCharCode(92):'';
+    h+='<span class="sa-sep">/</span><button data-crumb="'+escAttr(acc)+'">'+esc(parts[0])+'</button>';
+    for(let i=1;i<parts.length;i++){
+      acc=joinPath(acc.replace(/[\\/]+$/,''),parts[i]);
+      const native=i===parts.length-1?null:acc;
+      if(i===parts.length-1){ h+='<span class="sa-sep">/</span><span class="sa-here">'+esc(parts[i])+'</span>'; }
+      else { h+='<span class="sa-sep">/</span><button data-crumb="'+escAttr(native)+'">'+esc(parts[i])+'</button>'; }
+    }
+  }
+  $('#saveAsCrumbs').innerHTML=h;
+}
+document.addEventListener('click',e=>{
+  const o=$('#saveAsOverlay'); if(!o||!o.classList.contains('show')) return;
+  const t=e.target;
+  const up=t.closest && t.closest('[data-up]');   if(up){ browseSaveAs(up.dataset.up); return; }
+  const go=t.closest && t.closest('[data-dir]');  if(go){ browseSaveAs(go.dataset.dir); return; }
+  const cr=t.closest && t.closest('[data-crumb]');if(cr){ browseSaveAs(cr.dataset.crumb); return; }
+  const pick=t.closest && t.closest('[data-file]');
+  if(pick){ $('#saveAsName').value=pick.dataset.file; $('#saveAsName').focus(); return; }
+});
+$('#saveAsMkdir').onclick=async()=>{
+  const name=$('#saveAsNewDir').value.trim();
+  if(!name) return toast('先输入文件夹名',false);
+  if(!saveAsDir) return toast('先选一个具体位置（此电脑 → 某个盘）',false);
+  try{
+    const d=await api('/editor/api/make-dir',{dir:joinPath(saveAsDir,name)});
+    $('#saveAsNewDir').value='';
+    toast('已创建 '+name);
+    await browseSaveAs(d.dir);
+  }catch(e){ toast('创建失败：'+e.message,false); }
+};
+$('#saveAsRun').onclick=async()=>{
+  const name=$('#saveAsName').value.trim();
+  if(!name) return toast('请输入文件名',false);
+  const target=saveAsDir?joinPath(saveAsDir,name):name;
+  closeModal('#saveAsOverlay');
+  await writeBack(target, false);
+};
+document.querySelectorAll('[data-close-saveas]').forEach(b=>b.onclick=()=>closeModal('#saveAsOverlay'));
+$('#saveAsOverlay').addEventListener('click',e=>{ if(e.target.id==='saveAsOverlay') closeModal('#saveAsOverlay'); });
+$('#saveAsName').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#saveAsRun').click(); });
+$('#saveFileBtn').onclick=()=>saveToFile(false);
+$('#saveAsBtn').onclick=()=>saveToFile(true);
+document.addEventListener('keydown',e=>{
+  if(!(e.ctrlKey||e.metaKey)||e.shiftKey||e.altKey) return;
+  if(e.key!=='s'&&e.key!=='S') return;
+  e.preventDefault(); saveToFile();
+});
+
+// ---- 复制 / 发布 ----
+async function copyText(t,msg){ try{ await navigator.clipboard.writeText(t); toast(msg); }catch(e){ toast('复制失败（浏览器限制）：'+e.message,false); } }
+$('#copyHtmlBtn').onclick=()=> lastHtml?copyText(lastHtml,'已复制 HTML'):toast('请先渲染',false);
+// 富文本复制：公众号编辑器只认 text/html 剪贴板格式。
+// 只写 text/plain 的话会把 HTML 源码当纯文本粘进去（整个标签串裸奔）。
+async function copyRich(html,msg){
+  try{
+    if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/html':new Blob([html],{type:'text/html'}),
+        'text/plain':new Blob([html],{type:'text/plain'})
+      })]);
+    }else{
+      // 回退：塞进隐藏可编辑区，借 execCommand 让浏览器自己产出富文本剪贴板
+      const box=document.createElement('div');
+      box.contentEditable='true';
+      box.style.cssText='position:fixed;left:-99999px;top:0;width:420px;opacity:0';
+      box.innerHTML=html;
+      document.body.appendChild(box);
+      const r=document.createRange(); r.selectNodeContents(box);
+      const s=getSelection(); s.removeAllRanges(); s.addRange(r);
+      const ok=document.execCommand('copy');
+      s.removeAllRanges(); box.remove();
+      if(!ok) throw new Error('execCommand copy 被拒绝');
+    }
+    toast(msg);
+  }catch(e){ toast('复制失败（浏览器限制）：'+e.message,false); }
+}
+$('#copyWxBtn').onclick=()=> lastHtml?copyRich(lastHtml,'已复制富文本，去公众号编辑器粘贴'):toast('请先渲染',false);
+$('#pubBtn').onclick=async()=>{ const title=$('#title').value||((($('#md').value.match(/^#\s+(.+)$/m)||[])[1])||'未命名'); busy($('#pubBtn'),true); toast('正在发布草稿箱…'); try{ const cover=$('#cover').value.trim(); const d=await api('/editor/api/publish',{markdown:$('#md').value,title,theme:currentTheme(),relocate:$('#relocateOpt').checked,coverImage:cover||undefined,coverData:coverFile?coverFile.data:undefined,coverMime:coverFile?coverFile.mime:undefined}); toast('已发布 media_id='+(d.media_id||'').slice(0,20)+'…'); const cs=coverFile?'本地上传':(cover?'自定义URL':(d.coverMediaId?'自动':'')); setVal([{kind:'ok',text:'✅ 已发布草稿 media_id='+d.media_id+(cs?'（封面：'+cs+'）':'')}]); saveSnap(); }catch(e){ toast('发布失败：'+e.message,false); } finally{ busy($('#pubBtn'),false); } };
+
+// ---- 侧栏导航 / 设置 / AI 优化 ----
+function nav(id){ document.querySelectorAll('.subnav button').forEach(b=>b.classList.remove('active')); var b=document.getElementById(id); if(b)b.classList.add('active'); }
+// ---- 排版设置面板：改的是当前主题的 token ----
+function fillTypePanel(){
+  const t=baseTheme(); if(!t) return;
+  const tok=t.tokens||{};
+  const sel=$('#tpFont');
+  if(!sel.options.length){
+    FONT_PRESETS.forEach(([label,val])=>{ const o=document.createElement('option'); o.value=val; o.textContent=label; sel.append(o); });
+  }
+  const stack=tok.fontFamily||'';
+  const hit=FONT_PRESETS.find(([,v])=>v&&stack.replace(/\s/g,'').toLowerCase()===v.replace(/\s/g,'').toLowerCase());
+  sel.value=hit?hit[1]:'';
+  $('#tpFontCustom').value=hit?'':stack;
+  $('#tpSize').value=String(parseFloat(tok.fontSize||'16'));
+  $('#tpSizeVal').textContent=tok.fontSize||'';
+  $('#tpLine').value=String(tok.lineHeight??2);
+  $('#tpLineVal').textContent=String(tok.lineHeight??'');
+  $('#tpTrack').value=String(parseFloat(tok.letterSpacing||'0')||0);
+  $('#tpTrackVal').textContent=tok.letterSpacing||'0';
+  $('#tpText').value=toHex(tok.textColor)||'#333333';
+  $('#tpTextVal').textContent=tok.textColor||'';
+  $('#tpPrimary').value=toHex(tok.primaryColor)||'#000000';
+  $('#tpPrimaryVal').textContent=tok.primaryColor||'';
+  const pageBg=tok.pageBackgroundColor?toHex(tok.pageBackgroundColor):'';
+  $('#tpPageBg').value=pageBg||'#ffffff';
+  $('#tpPageBgClear').style.display=pageBg?'':'none';
+  paintRanges();   // 滑杆填充段跟随新值（否则切主题后轨道还是上一次的蓝段）
+  paintTypeState();
+}
+// 主题色可以是 oklch() 等 CSS 颜色，而 <input type=color> 只吃 #rrggbb：
+// 不认识的就先落在黑色上，但数值列仍显示原值，用户一改才覆盖。
+function toHex(c){
+  const s=String(c||'').trim();
+  const hex=/^#([0-9a-f]{6})$/i.exec(s); if(hex) return '#'+hex[1];
+  const short=/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(s); if(short) return '#'+short.slice(1).map(x=>x+x).join('');
+  const d=document.createElement('div'); d.style.color=s; document.body.append(d);
+  const rgb=getComputedStyle(d).color; d.remove();
+  const m=/rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb); if(!m) return '';
+  return '#'+[m[1],m[2],m[3]].map(x=>Number(x).toString(16).padStart(2,'0')).join('');
+}
+function setOverride(token,val){
+  if(val===''||val==null) delete themeOverrides[token];
+  else themeOverrides[token]=val;
+  paintTypeState(); render();
+}
+$('#tpFont').onchange=()=>{ const v=$('#tpFont').value; if(v){ themeOverrides.fontFamily=v; delete themeOverrides._fontCustom; } $('#tpFontCustom').value=''; paintTypeState(); render(); };
+$('#tpFontCustom').onchange=()=>{ const v=$('#tpFontCustom').value.trim(); if(v) themeOverrides.fontFamily=v; else delete themeOverrides.fontFamily; paintTypeState(); render(); };
+/* 滑杆的已填充段：CSS 画不了「到拇指为止」的那段，所以把百分比写在元素上，
+   轨道背景用它分段（--fill 是运行时变量，见 check-editor 的 RUNTIME 白名单）。 */
+function paintRange(el){ const v=el; const min=+v.min||0, max=+v.max||100; v.style.setProperty('--fill',(((+v.value-min)/(max-min))*100).toFixed(1)+'%'); }
+function paintRanges(){ ['#tpSize','#tpLine','#tpTrack'].forEach(s=>paintRange($(s))); }
+
+$('#tpSize').oninput=()=>{ setOverride('fontSize', Number($('#tpSize').value).toFixed(1).replace(/\.0$/,'')+'px'); $('#tpSizeVal').textContent=$('#tpSize').value+'px'; paintRange($('#tpSize')); };
+$('#tpLine').oninput=()=>{ setOverride('lineHeight', Number($('#tpLine').value)); $('#tpLineVal').textContent=Number($('#tpLine').value).toFixed(2); paintRange($('#tpLine')); };
+$('#tpTrack').oninput=()=>{ const v=Number($('#tpTrack').value); setOverride('letterSpacing', v?v.toFixed(3)+'em':''); $('#tpTrackVal').textContent=v?v.toFixed(3)+'em':'0'; paintRange($('#tpTrack')); };
+$('#tpText').oninput=()=>{ setOverride('textColor', $('#tpText').value); $('#tpTextVal').textContent=$('#tpText').value; };
+$('#tpPrimary').oninput=()=>{ setOverride('primaryColor', $('#tpPrimary').value); $('#tpPrimaryVal').textContent=$('#tpPrimary').value; };
+$('#tpPageBg').oninput=()=>{ setOverride('pageBackgroundColor', $('#tpPageBg').value); $('#tpPageBgClear').style.display=''; if(darkOn) reportDarkRisk(); };
+$('#tpPageBgClear').onclick=()=>{ delete themeOverrides.pageBackgroundColor; $('#tpPageBgClear').style.display='none'; paintTypeState(); if(darkOn) reportDarkRisk(); };
+$('#tpReset').onclick=()=>{ themeOverrides={}; fillTypePanel(); render(); if(darkOn) reportDarkRisk(); toast('已还原当前主题原值'); };
+$('#tpSaveAs').onclick=async()=>{
+  const base=baseTheme(); if(!base) return toast('请先选择主题',false);
+  const defName=(base.name+' 自定义').slice(0,30);
+  const name=prompt('另存为主题名：',defName); if(!name||!name.trim()) return;
+  const t=currentTheme(); t.name=name.trim();
+  try{ await api('/editor/api/savetheme',{theme:t}); await loadThemes(); $('#themeSel').value=t.name; themeOverrides={}; fillTypePanel(); render(); toast('已另存为：'+t.name); }
+  catch(e){ toast('保存失败：'+e.message,false); }
+};
+
+// ---- 正文图片上传（本地图片终于有通路了）----
+// ---- 插入视频占位块 ----
+// 为什么是占位而不是真播放器：微信正文无法用 API 写入可播放的视频（见 docs/DESIGN.md §20.10）。
+// 这里插 :::video 指令，渲染后带 data-swx-video 标记，发布后据它在公众号编辑器里找插入点。
+function insertVideoPlaceholder(){
+  openModal('#videoOverlay','#vSrc');
+}
+function videoDirective(){
+  const src=$('#vSrc').value.trim(), title=$('#vTitle').value.trim();
+  const parts=[];
+  if(src) parts.push('src="'+src.replace(/"/g,'')+'"');
+  if(title) parts.push('title="'+title.replace(/"/g,'')+'"');
+  return ':::video'+(parts.length?'{'+parts.join(' ')+'}':'')+'\n:::';
+}
+$('#vInsert').onclick=()=>{
+  const ta=$('#md');
+  pushUndo(ta.value);
+  const ins=videoDirective();
+  const s=ta.selectionStart, e=ta.selectionEnd, v=ta.value;
+  const before=(s>0&&v[s-1]!=='\n')?'\n\n':'';
+  const after=(e<v.length&&v[e]!=='\n')?'\n\n':'';
+  ta.value=v.slice(0,s)+before+ins+after+v.slice(e);
+  ta.selectionStart=ta.selectionEnd=s+before.length+ins.length;
+  closeModal('#videoOverlay');
+  $('#vSrc').value=''; $('#vTitle').value='';
+  ta.focus(); render(); saveSnap();
+  toast('已插入视频占位块。真视频发布后到公众号「视频 → 本地上传」放，再删掉占位块');
+};
+
+$('#bodyImgFile').addEventListener('change',async e=>{
+  const f=e.target.files&&e.target.files[0]; e.target.value='';
+  if(!f) return;
+  if(f.size>20*1024*1024) return toast('图片过大(>20MB)',false);
+  const reader=new FileReader();
+  reader.onload=async()=>{
+    const data=String(reader.result).split(',')[1];
+    toast('正在处理图片…');
+    try{
+      const d=await api('/editor/api/upload-image',{data,mime:f.type||'image/jpeg',rawBytes:f.size});
+      wrap('![',']('+location.origin+d.url+')');
+      render();
+      toast(d.note||('已插入 '+Math.round(d.bytes/1024)+'KB'));
+    }catch(err){ toast('上传失败：'+err.message,false); }
+  };
+  reader.readAsDataURL(f);
+});
+
+// 封面状态指示：有封面时入口按钮上亮一个点 + 标注来源
+function paintCoverState(){
+  const url=$('#cover').value.trim();
+  const on=!!(coverFile||url);
+  $('#coverDot').style.display=on?'':'none';
+  $('#coverDotText').textContent=coverFile?'（本地图）':(url?'（URL）':'');
+}
+// ---- 生成封面（主题色 + 标题，不再是纯渐变）----
+$('#coverGen').onclick=async()=>{
+  const title=$('#title').value||((($('#md').value.match(/^#\s+(.+)$/m)||[])[1])||'未命名文章');
+  busy($('#coverGen'),true); toast('正在生成封面…');
+  try{
+    const d=await api('/editor/api/cover',{title,theme:currentTheme(),meta:''});
+    coverFile={ data:d.data, mime:d.mime };
+    $('#coverThumb').src='data:'+d.mime+';base64,'+d.data;
+    $('#coverThumbWrp').style.display=''; $('#cover').value='';
+    paintCoverState();
+    toast('封面已生成（900×383）');
+  }catch(e){ toast('生成失败：'+e.message,false); }
+  finally{ busy($('#coverGen'),false); }
+};
+
+$('#navTheme').onclick=()=>{ nav('navTheme'); $('#themePanel').open=true; $('#themeSel').focus(); };
+// 点击页面其他位置关闭「主题管理」下拉；点侧栏「文章主题」或下拉内部（含 summary/菜单项）时不关闭
+document.addEventListener('click',e=>{
+  for(const [id,keep] of [['#themePanel','#navTheme'],['#savePanel',null]]){
+    const p=$(id); if(!p||!p.open) continue;
+    if(p.contains(e.target)) continue;
+    if(keep && e.target.closest && e.target.closest(keep)) continue;
+    p.open=false;
+  }
+});
+$('#navImgHost').onclick=()=>{ nav('navImgHost'); openModal('#imgHostOverlay'); };
+function aiSelRange(){ const t=$('#md'); return { start:t.selectionStart, end:t.selectionEnd, text:(t.value||'').slice(t.selectionStart,t.selectionEnd) }; }
+function refreshAiSel(){ const s=aiSelRange(); const info=$('#aiSelInfo'); if(info) info.textContent = s.text.trim() ? ('· 已选 '+s.text.length+' 字') : ''; }
+$('#navAi').onclick=()=>{ nav('navAi'); if(!$('#md').value.trim())return toast('请先输入文章',false); refreshAiSel(); openModal('#aiOverlay','#aiPrompt'); };
+document.querySelectorAll('[data-close-ai]').forEach(b=>b.onclick=()=>{ closeModal('#aiOverlay'); });
+$('#aiOverlay').addEventListener('click',e=>{ if(e.target.id==='aiOverlay') closeModal('#aiOverlay'); });
+document.querySelectorAll('input[name="aiScope"]').forEach(r=>r.addEventListener('change',refreshAiSel));
+$('#aiRun').onclick=async()=>{
+  const md=$('#md').value; if(!md.trim())return toast('请先输入文章',false);
+  const scope=document.querySelector('input[name="aiScope"]:checked').value;
+  const prompt=$('#aiPrompt').value.trim();
+  let selection;
+  if(scope==='sel'){ const s=aiSelRange(); if(s.end>s.start){ selection={start:s.start,end:s.end}; } else { toast('未选中文字，将优化全文',false); } }
+  closeModal('#aiOverlay');
+  busy($('#aiRun'),true);
+  toast('AI 优化中（LLM）…');
+  try{
+    const body={ markdown:md }; if(prompt) body.prompt=prompt; if(selection) body.selection=selection;
+    const d=await api('/editor/api/optimize', body);
+    const t=$('#md');
+    pushUndo(t.value);
+    if(selection){ t.value = md.slice(0,selection.start) + d.markdown + md.slice(selection.end); const pos=selection.start+d.markdown.length; t.setSelectionRange(pos,pos); }
+    else { t.value = d.markdown; }
+    saveSnap(); render();
+    toast(selection?'已优化选中片段':'AI 优化完成');
+  }catch(e){ toast('AI 优化失败：'+e.message,false); }
+  finally{ busy($('#aiRun'),false); }
+};
+// 设置弹窗：开关
+const relocateToggle=$('#relocateOpt'); relocateToggle.checked=localStorage.getItem('mp-relocate')!=='0'; relocateToggle.addEventListener('change',()=>localStorage.setItem('mp-relocate',relocateToggle.checked?'1':'0'));
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>{ closeModal('#imgHostOverlay'); });
+$('#imgHostOverlay').addEventListener('click',e=>{ if(e.target.id==='imgHostOverlay') closeModal('#imgHostOverlay'); });
+
+// ---- 标签切换 (实时预览 / 手机视图) ----
+$('#p1').onclick=()=>{ $('#p1').classList.add('active'); $('#p2').classList.remove('active'); $('#previewWrap').style.display=''; $('#pv').style.width='390px'; };
+$('#p2').onclick=()=>{ $('#p2').classList.add('active'); $('#p1').classList.remove('active'); $('#pv').style.width='100%'; };
+// ---- 左右栏同步滚动 ----
+// 左侧是 textarea 自身滚动，右侧是 iframe 内部文档滚动（实测外层 .preview-wrap 不滚）
+const SYNC_KEY='mp-sync-scroll';
+let syncOn = localStorage.getItem(SYNC_KEY)!=='0';
+let syncLock = false;
+let pvScrollHandler = null;
+function updateSyncBtn(){
+  const b=$('#syncToggle'); if(!b) return;
+  b.classList.toggle('active', syncOn);
+  b.setAttribute('aria-pressed', syncOn?'true':'false');
+  b.title = syncOn ? '左右栏同步滚动（点击关闭）' : '已关闭同步滚动（点击开启）';
+}
+function mdScrollInfo(){
+  const ta=$('#md');
+  return { kind:'ta', el:ta, top:ta.scrollTop, max:Math.max(0, ta.scrollHeight-ta.clientHeight) };
+}
+function pvScrollInfo(){
+  const f=$('#pv'); const w=f && f.contentWindow;
+  if(!w || !w.document) return null;
+  const de=w.document.documentElement || w.document.body;
+  const max=Math.max(0, (de?de.scrollHeight:0)-(w.innerHeight||0));
+  return { kind:'win', el:w, top:w.scrollY||0, max };
+}
+function applyScroll(info, top){
+  if(info.kind==='ta') info.el.scrollTop=top;
+  else info.el.scrollTo(0, top);
+}
+function syncScrollFrom(src){
+  if(!syncOn || syncLock) return;
+  const a = src==='md' ? mdScrollInfo() : pvScrollInfo();
+  const b = src==='md' ? pvScrollInfo() : mdScrollInfo();
+  if(!a || !b) return;
+  const ratio = a.max>0 ? a.top/a.max : 0;
+  syncLock = true;
+  applyScroll(b, Math.round(ratio*Math.max(0,b.max)));
+  requestAnimationFrame(()=>{ syncLock=false; });
+}
+let mdTick=false;
+$('#md').addEventListener('scroll',()=>{
+  if(mdTick) return; mdTick=true;
+  requestAnimationFrame(()=>{ mdTick=false; syncScrollFrom('md'); });
+},{passive:true});
+function bindPreviewScroll(){
+  const w=$('#pv') && $('#pv').contentWindow;
+  if(!w || !w.document) return;
+  if(pvScrollHandler){ try{ w.removeEventListener('scroll', pvScrollHandler); }catch(e){} }
+  let tick=false;
+  pvScrollHandler = ()=>{
+    if(tick) return; tick=true;
+    requestAnimationFrame(()=>{ tick=false; syncScrollFrom('pv'); });
+  };
+  w.addEventListener('scroll', pvScrollHandler, {passive:true});
+}
+$('#pv').addEventListener('load',()=>{
+  bindPreviewScroll();
+  // 重新渲染会把预览滚回顶部，这里按左栏当前位置恢复
+  if(syncOn) requestAnimationFrame(()=>syncScrollFrom('md'));
+});
+$('#syncToggle').onclick=()=>{
+  syncOn=!syncOn;
+  localStorage.setItem(SYNC_KEY, syncOn?'1':'0');
+  updateSyncBtn();
+  toast(syncOn?'已开启左右栏同步滚动':'已关闭左右栏同步滚动');
+  if(syncOn) syncScrollFrom('md');
+};
+updateSyncBtn();
+
+
+// ---- 事件 ----
+// ---- 封面上传 / 预览 ----
+$('#coverUpload').onclick=()=>$('#coverFile').click();
+$('#coverFile').addEventListener('change',e=>{
+  const f=e.target.files && e.target.files[0]; if(!f) return;
+  if(f.size > 5*1024*1024){ toast('图片过大(>5MB)，请换小图',false); return; }
+  const reader=new FileReader();
+  reader.onload=()=>{ coverFile={ data:String(reader.result).split(',')[1], mime:f.type||'image/jpeg' }; $('#coverThumb').src=String(reader.result); $('#coverThumbWrp').style.display=''; $('#cover').value=''; paintCoverState(); toast('已选择本地封面'); };
+  reader.readAsDataURL(f);
+});
+$('#coverClear').onclick=()=>{ coverFile=null; $('#coverThumbWrp').style.display='none'; $('#coverThumb').src=''; $('#cover').value=''; paintCoverState(); toast('已清除封面'); };
+// 填 URL 也算设了封面（发布时走 coverImage），即时反映在入口上
+$('#cover').addEventListener('input',paintCoverState);
+
+$('#themeSel').addEventListener('change',()=>{ markFileDirty(); themeOverrides={}; fillTypePanel(); render(); renderThemeList(themesCache.filter(t=>t.origin==='saved')); });
+// ---- 撤销/重做栈（自定义快照，覆盖工具栏程序化改动与键盘输入）----
+let undoStack=[], redoStack=[];
+let prevMd='', lastInputTs=0;
+function pushUndo(beforeVal){
+  if(beforeVal===undefined) beforeVal=$('#md').value;
+  if(undoStack[undoStack.length-1]===beforeVal) return;
+  undoStack.push(beforeVal); if(undoStack.length>60) undoStack.shift();
+  redoStack.length=0; updateUndoBtns();
+}
+function doUndo(){
+  if(!undoStack.length) return toast('没有可撤销的操作',false);
+  const cur=$('#md').value, prev=undoStack.pop();
+  redoStack.push(cur);
+  $('#md').value=prev; prevMd=prev; render(); saveSnap(); updateUndoBtns();
+  const ta=$('#md'); ta.setSelectionRange(ta.value.length,ta.value.length); ta.focus();
+}
+function doRedo(){
+  if(!redoStack.length) return toast('没有可重做的操作',false);
+  const cur=$('#md').value, next=redoStack.pop();
+  undoStack.push(cur);
+  $('#md').value=next; prevMd=next; render(); saveSnap(); updateUndoBtns();
+  const ta=$('#md'); ta.setSelectionRange(ta.value.length,ta.value.length); ta.focus();
+}
+function updateUndoBtns(){
+  const u=$('#undoBtn'), r=$('#redoBtn');
+  u.disabled=!undoStack.length; r.disabled=!redoStack.length;
+  u.title=undoStack.length?'撤销':'撤销（无操作可撤销）';
+  r.title=redoStack.length?'重做':'重做（无操作可重做）';
+}
+$('#md').addEventListener('input',e=>{
+  const cur=$('#md').value;
+  if(!e.isComposing){
+    const now=Date.now();
+    if(now-lastInputTs>600) pushUndo(prevMd);
+    lastInputTs=now; prevMd=cur;
+  } else { prevMd=cur; }
+  markFileDirty(); render(); queueSave();
+});
+$('#title').addEventListener('input',()=>{ markFileDirty(); queueSave(); });
+$('#undoBtn').onclick=doUndo;
+$('#redoBtn').onclick=doRedo;
+
+// ---- 启动 ----
+(async()=>{
+  buildTablePicker();
+  loadHistory(); renderHistory(); activeId=history[0]?.id ?? null;
+  const saved=history[0]; if(saved){ $('#md').value=saved.md; $('#title').value=saved.title; }
+  else { $('#md').value='# 示例标题\n\n在这里用 Markdown 写作。支持 **加粗**、*斜体*、==高亮==、> 引用、列表、表格、代码块等。\n\n## 小节一\n\n> 引用一条。\n\n- 要点一\n- 要点二\n\n| 列A | 列B |\n| --- | --- |\n| 1 | 2 |\n'; }
+  prevMd=$('#md').value; updateUndoBtns();
+  await loadThemes();
+  // ?file= 放在主题列表就绪之后，才能把 md 里的主题真正选中
+  await loadFromQuery();
+  render();
+})().catch(e=>setVal([{kind:'err',text:'初始化失败：'+e.message}]));
+</script>
+</body>
+</html>

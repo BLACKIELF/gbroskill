@@ -1,0 +1,181 @@
+'use client'
+
+import React, { Suspense, useEffect, useRef, useState } from 'react'
+import { Button, Form, Notification, Toast, Typography } from '@douyinfe/semi-ui'
+import { IconPlusCircle } from '@douyinfe/semi-icons'
+import {
+  BiliType,
+  fetcher,
+  LiveStreamerEntity,
+  sendRequest,
+  StudioEntity,
+} from '@/app/lib/api-streamer'
+import TemplateFields from '@/app/ui/TemplateFields'
+import { registerMediaQuery, responsiveMap } from '@/app/lib/utils'
+import useSWRMutation from 'swr/mutation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { FormApi } from '@douyinfe/semi-ui/lib/es/form'
+import useSWR from 'swr'
+import { useTypeTree } from '@/app/lib/use-streamers'
+import PageHeader from '../../components/PageHeader'
+import dc from '@/app/ui/data-card.module.scss'
+
+const Edit = () => {
+  const { Paragraph } = Typography
+  const searchParams = useSearchParams()
+  const { trigger } = useSWRMutation('/v1/upload/streamers', sendRequest)
+  const { data, error, isLoading, mutate } = useSWR<StudioEntity>(
+    () => (searchParams.get('id') ? `/v1/upload/streamers/${searchParams.get('id')}` : null),
+    fetcher
+  )
+  const router = useRouter()
+  const { typeTree, isError } = useTypeTree()
+  const api = useRef<FormApi>(undefined)
+  const [labelPosition, setLabelPosition] = useState<'top' | 'left' | 'inset'>('inset')
+  useEffect(() => {
+    const unRegister = registerMediaQuery(responsiveMap.lg, {
+      match: () => {
+        setLabelPosition('left')
+      },
+      unmatch: () => {
+        setLabelPosition('top')
+      },
+    })
+    return () => unRegister()
+  }, [])
+
+  // 分区树来自 /bili/archive/pre，需要一个可用的 B 站 cookie；没有账号时后端返回 500，
+  // 这里必须给出可读的原因而不是空白页。
+  const serverMessage = (e: any): string | undefined => {
+    const raw = e?.message
+    if (typeof raw !== 'string' || !raw) return undefined
+    try {
+      const parsed = JSON.parse(raw)
+      return typeof parsed?.message === 'string' ? parsed.message : raw
+    } catch {
+      return raw
+    }
+  }
+  const loadError: string | undefined = error
+    ? `模板加载失败：${serverMessage(error) ?? '未知错误'}`
+    : isError
+      ? `分区列表加载失败：${serverMessage(isError) ?? '未知错误'}（需要至少一个可用的 B 站账号）`
+      : undefined
+  if (loadError) {
+    return (
+      <>
+        <PageHeader
+          icon={<IconPlusCircle size="large" />}
+          title="编辑投稿模板"
+          description="修改模板信息并保存"
+        />
+        <div className={dc.content}>
+          <div className={dc.card} style={{ padding: '28px 32px' }}>
+            <Typography.Text type="danger">{loadError}</Typography.Text>
+          </div>
+        </div>
+      </>
+    )
+  }
+  if (isLoading) return <div>Loading...</div>
+  if (!data || !typeTree) return null
+
+  let uploadStreamers = {
+    ...data,
+    tid: [
+      typeTree.find((tt: BiliType) => {
+        return tt.children.some((ct) => ct.id === data?.tid)
+      })?.value,
+      data.tid,
+    ],
+    sound: (data.dolby === 1 ? ['dolby'] : []).concat(data.hires === 1 ? ['hires'] : []),
+    interaction: (data.up_close_danmu === 1 ? ['up_close_danmu'] : [])
+      .concat(data.up_close_reply === 1 ? ['up_close_reply'] : [])
+      .concat(data.up_selection_reply === 1 ? ['up_selection_reply'] : []),
+    charging_pay: data.charging_pay === 1,
+    no_reprint: data.no_reprint === 1,
+    is_only_self: data.is_only_self === 1,
+    isDtime: data.dtime ? true : false,
+  }
+
+  const handleSave = async () => {
+    const values = await api.current?.validate()
+    try {
+      const studioEntity: StudioEntity = {
+        template_name: values?.template_name,
+        user_cookie: values?.user_cookie,
+        copyright: values?.copyright,
+        id: values?.id,
+        copyright_source: values?.copyright_source ?? '',
+        tid: values?.tid[1],
+        tid_v2: values?.tid_v2 ?? null,
+        cover_path: values?.cover_path ?? '',
+        title: values?.title ?? '',
+        description: values?.description ?? '',
+        dynamic: values?.dynamic ?? '',
+        tags: values?.tags ?? [],
+        dolby: values?.sound.includes('dolby') ? 1 : 0,
+        hires: values?.sound.includes('hires') ? 1 : 0,
+        up_selection_reply: values?.interaction.includes('up_selection_reply') ? 1 : 0,
+        up_close_reply: values?.interaction.includes('up_close_reply') ? 1 : 0,
+        up_close_danmu: values?.interaction.includes('up_close_danmu') ? 1 : 0,
+        charging_pay: values?.charging_pay ? 1 : 0,
+        no_reprint: values?.no_reprint ? 1 : 0,
+        is_only_self: values?.is_only_self ? 1 : 0,
+        mission_id: values?.mission_id,
+        dtime: values?.isDtime ? values?.dtime : null,
+        credits: values?.credits ?? null,
+        uploader: values?.uploader ?? null,
+        extra_fields: values?.extra_fields ?? '',
+      }
+      const result = await trigger(studioEntity)
+      await mutate(result)
+      Toast.success('更新成功')
+      router.push('/upload-manager')
+    } catch (e: any) {
+      Notification.error({
+        title: '保存失败',
+        content: <Paragraph style={{ maxWidth: 450 }}>{e.message}</Paragraph>,
+        style: { width: 'min-content' },
+      })
+    }
+  }
+
+  return (
+    <>
+      <PageHeader
+        icon={<IconPlusCircle size="large" />}
+        title="编辑投稿模板"
+        description="修改模板信息并保存"
+        actions={
+          <Button onClick={handleSave} type="primary" icon={<IconPlusCircle />} theme="solid">
+            保存模板
+          </Button>
+        }
+      />
+      <div className={dc.content}>
+        <div className={dc.card} style={{ padding: '28px 32px 40px' }}>
+          <Form
+            initValues={uploadStreamers}
+            autoScrollToError
+            onSubmit={handleSave}
+            component={TemplateFields}
+            getFormApi={(formApi) => (api.current = formApi)}
+            labelWidth="180px"
+            labelPosition={labelPosition}
+          />
+        </div>
+      </div>
+    </>
+  )
+}
+
+const EditTemplate: React.FC = () => {
+  return (
+    <Suspense>
+      <Edit />
+    </Suspense>
+  )
+}
+
+export default EditTemplate

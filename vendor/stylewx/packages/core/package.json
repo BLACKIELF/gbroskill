@@ -1,0 +1,64 @@
+{
+  "name": "@stylewx/core",
+  "version": "0.6.0",
+  "description": "stylewx headless render core: Markdown → WeChat-compatible inlined-style HTML. Pure function, no DOM / no Node-only APIs.",
+  "keywords": [
+    "wechat",
+    "wechat-article",
+    "markdown",
+    "html",
+    "renderer",
+    "微信公众号"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "wjunhere",
+    "url": "https://github.com/wjunhere"
+  },
+  "homepage": "https://github.com/wjunhere/stylewx#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wjunhere/stylewx.git",
+    "directory": "packages/core"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "@stylewx/components": "workspace:*",
+    "@stylewx/theme": "workspace:*",
+    "juice": "^11.0.1",
+    "rehype-raw": "^7.0.0",
+    "rehype-stringify": "^10.0.1",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.1",
+    "unified": "^11.0.5"
+  },
+  "devDependencies": {
+    "@stylewx/validator": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false
+}

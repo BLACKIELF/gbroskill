@@ -1,0 +1,54 @@
+{
+  "vendor/lark-cli/cmd/update/update_test.go": {
+    "sha256": "4b12abc90e59d1a093e0ec9f0ac8209b293fbc8f829a90f07706a93ccd7d4d44",
+    "reason": "Unmodified upstream source/test documentation containing synthetic or explanatory filesystem paths; byte-compared with pinned public source."
+  },
+  "vendor/lark-cli/cmd/config/policy_test.go": {
+    "sha256": "5237fbd8f5fc66676f4734e2c7dc588e873fbfa7406ae985e081177a8d4e7c39",
+    "reason": "Unmodified upstream source/test documentation containing synthetic or explanatory filesystem paths; byte-compared with pinned public source."
+  },
+  "vendor/lark-cli/internal/vfs/localfileio/policy_test.go": {
+    "sha256": "8fc37880516033cd5b224bdc27e4817374b10a3936dc9de7585569c18afc9b4b",
+    "reason": "Unmodified upstream source/test documentation containing synthetic or explanatory filesystem paths; byte-compared with pinned public source."
+  },
+  "vendor/lark-cli/internal/vfs/localfileio/path_test.go": {
+    "sha256": "cd83cd39c97217c0a0703170cde2cb930edbd38294d4bbf05bea56e6d7708079",
+    "reason": "Unmodified upstream source/test documentation containing synthetic or explanatory filesystem paths; byte-compared with pinned public source."
+  },
+  "vendor/lark-cli/internal/core/workspace_test.go": {
+    "sha256": "97bdddcff654043b946c8fb62e5cdca24917c2d7a2b4e41546397e7bfdf12a96",
+    "reason": "Unmodified upstream source/test documentation containing synthetic or explanatory filesystem paths; byte-compared with pinned public source."
+  },
+  "vendor/lark-cli/internal/selfupdate/updater_test.go": {
+    "sha256": "daa2837c25181952b278470599e69c7e4ebb9f4780d236c10ed87d4121f283c7",
+    "reason": "Unmodified upstream source/test documentation containing synthetic or explanatory filesystem paths; byte-compared with pinned public source."
+  },
+  "vendor/lark-cli/internal/cmdpolicy/engine.go": {
+    "sha256": "616d41219381746f1e8ed08f2d3042508260ca003542147407169f3cff09532f",
+    "reason": "Unmodified upstream source/test documentation containing synthetic or explanatory filesystem paths; byte-compared with pinned public source."
+  },
+  "vendor/lark-cli/internal/cmdpolicy/source_label_test.go": {
+    "sha256": "a4122a4c8330ac9bd9e651595087d8bf9cf4e4483b5e9ff672a101307ca8d6d5",
+    "reason": "Unmodified upstream source/test documentation containing synthetic or explanatory filesystem paths; byte-compared with pinned public source."
+  },
+  "vendor/lark-cli/internal/skillscheck/sync_test.go": {
+    "sha256": "41a53381e8f0b355555b461752e75d6dea80995e4156cf2d2f3c80b3a9c953cd",
+    "reason": "Unmodified upstream source/test documentation containing synthetic or explanatory filesystem paths; byte-compared with pinned public source."
+  },
+  "vendor/lark-cli/shortcuts/calendar/description_rich_images_test.go": {
+    "sha256": "ab0825c703ed4e9bfdc3bd88acb092b457ce5fa4e77782d0a3c33b1864ee8a09",
+    "reason": "Unmodified upstream source/test documentation containing synthetic or explanatory filesystem paths; byte-compared with pinned public source."
+  },
+  "vendor/lark-cli/shortcuts/sheets/csv_put_guard_test.go": {
+    "sha256": "7d53cc5bb59a101f70e745528255452c80e2f9368a3ffcf1c58a1eef5316534d",
+    "reason": "Unmodified upstream source/test documentation containing synthetic or explanatory filesystem paths; byte-compared with pinned public source."
+  },
+  "vendor/lark-cli/sidecar/server-demo/README.md": {
+    "sha256": "b640e0a86bb217e9023d76435361d8ffdb3f6b7ed5345175bb1fd51cad5f3477",
+    "reason": "Unmodified upstream source/test documentation containing synthetic or explanatory filesystem paths; byte-compared with pinned public source."
+  },
+  "vendor/lark-cli/skills/lark-apps/references/lark-apps-db-execute.md": {
+    "sha256": "6203fa3ee973c8f16ce3b03457d58e2671e7074600b7500801c9b00233323d63",
+    "reason": "Unmodified upstream source/test documentation containing synthetic or explanatory filesystem paths; byte-compared with pinned public source."
+  }
+}

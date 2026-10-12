@@ -1,0 +1,628 @@
+{
+  "schemaVersion": 1,
+  "release": "1012v1",
+  "auditDate": "2026-10-12",
+  "scope": "Current GBro directly referenced Skills and publishing/reading runtimes; optional, hosted and license-unresolved dependencies listed separately. Package-manager transitive dependencies are resolved from the included manifests/lockfiles, not vendored installed environments.",
+  "components": [
+    {
+      "id": "gbro-social-workflow",
+      "kind": "skill",
+      "source": "https://github.com/BLACKIELF/gbroskill",
+      "license": "MIT",
+      "path": "skills/gbro-social-workflow",
+      "revision": null,
+      "status": "bundled",
+      "notes": "Public adaptation of the current author workflow: no private account permissions, local paths or private reference assets."
+    },
+    {
+      "id": "human-writing",
+      "kind": "skill",
+      "source": null,
+      "license": "MIT",
+      "path": "skills/human-writing",
+      "revision": null,
+      "status": "bundled",
+      "notes": "Installed MIT-licensed snapshot; upstream repository not established. Included LICENSE and per-file hashes are the provenance evidence; no upstream commit is claimed."
+    },
+    {
+      "id": "humanizer",
+      "kind": "skill",
+      "source": "https://github.com/op7418/Humanizer-zh",
+      "license": "MIT",
+      "path": "skills/humanizer",
+      "revision": null,
+      "status": "bundled",
+      "notes": "Installed snapshot; local edits preserved and private installation records excluded."
+    },
+    {
+      "id": "title-matrix",
+      "kind": "skill",
+      "source": "https://github.com/zhouwei713/title-matrix",
+      "license": "MIT",
+      "path": "skills/title-matrix",
+      "revision": "10a1ee1ba5cd1a5a5cfabdb776ac8e93c7b93065",
+      "status": "bundled",
+      "notes": "Installed snapshot; local edits preserved and private installation records excluded."
+    },
+    {
+      "id": "anysearch",
+      "kind": "skill",
+      "source": "https://github.com/anysearch-ai/anysearch-skill",
+      "license": "Apache-2.0",
+      "path": "skills/anysearch",
+      "revision": null,
+      "status": "bundled",
+      "notes": "Installed snapshot; local edits preserved and private installation records excluded."
+    },
+    {
+      "id": "gbro-cover-design",
+      "kind": "skill",
+      "source": "https://github.com/pyang5166/gbro-cover-design",
+      "license": "MIT",
+      "path": "skills/gbro-cover-design",
+      "revision": null,
+      "status": "bundled",
+      "notes": "Installed snapshot; local edits preserved and private installation records excluded."
+    },
+    {
+      "id": "space-xhs-writer",
+      "kind": "skill",
+      "source": "https://github.com/SpaceZephyr/creator-buddy",
+      "license": "MIT",
+      "path": "skills/space-xhs-writer",
+      "revision": "edf46c567ff54b72ee2157d06f3a02dbd67aaa9c",
+      "status": "bundled",
+      "notes": "Installed snapshot. Upstream README explicitly declares MIT; no standalone upstream LICENSE. Distribution includes the pinned README and standard MIT text; local adaptations preserved."
+    },
+    {
+      "id": "space-xhs-title",
+      "kind": "skill",
+      "source": "https://github.com/SpaceZephyr/creator-buddy",
+      "license": "MIT",
+      "path": "skills/space-xhs-title",
+      "revision": "edf46c567ff54b72ee2157d06f3a02dbd67aaa9c",
+      "status": "bundled",
+      "notes": "Installed snapshot. Upstream README explicitly declares MIT; no standalone upstream LICENSE. Distribution includes the pinned README and standard MIT text; local adaptations preserved."
+    },
+    {
+      "id": "space-xhs-cover",
+      "kind": "skill",
+      "source": "https://github.com/SpaceZephyr/creator-buddy",
+      "license": "MIT",
+      "path": "skills/space-xhs-cover",
+      "revision": "edf46c567ff54b72ee2157d06f3a02dbd67aaa9c",
+      "status": "bundled",
+      "notes": "Installed snapshot. Upstream README explicitly declares MIT; no standalone upstream LICENSE. Distribution includes the pinned README and standard MIT text; local adaptations preserved."
+    },
+    {
+      "id": "space-xhs-image",
+      "kind": "skill",
+      "source": "https://github.com/SpaceZephyr/creator-buddy",
+      "license": "MIT",
+      "path": "skills/space-xhs-image",
+      "revision": "edf46c567ff54b72ee2157d06f3a02dbd67aaa9c",
+      "status": "bundled",
+      "notes": "Installed snapshot. Upstream README explicitly declares MIT; no standalone upstream LICENSE. Distribution includes the pinned README and standard MIT text; local adaptations preserved."
+    },
+    {
+      "id": "space-xhs-hotspot",
+      "kind": "skill",
+      "source": "https://github.com/SpaceZephyr/creator-buddy",
+      "license": "MIT",
+      "path": "skills/space-xhs-hotspot",
+      "revision": "edf46c567ff54b72ee2157d06f3a02dbd67aaa9c",
+      "status": "bundled",
+      "notes": "Installed snapshot. Upstream README explicitly declares MIT; no standalone upstream LICENSE. Distribution includes the pinned README and standard MIT text; local adaptations preserved."
+    },
+    {
+      "id": "space-xhs-note-analytics",
+      "kind": "skill",
+      "source": "https://github.com/SpaceZephyr/creator-buddy",
+      "license": "MIT",
+      "path": "skills/space-xhs-note-analytics",
+      "revision": "edf46c567ff54b72ee2157d06f3a02dbd67aaa9c",
+      "status": "bundled",
+      "notes": "Installed snapshot. Upstream README explicitly declares MIT; no standalone upstream LICENSE. Distribution includes the pinned README and standard MIT text; local adaptations preserved."
+    },
+    {
+      "id": "space-xhs-account-audit",
+      "kind": "skill",
+      "source": "https://github.com/SpaceZephyr/creator-buddy",
+      "license": "MIT",
+      "path": "skills/space-xhs-account-audit",
+      "revision": "edf46c567ff54b72ee2157d06f3a02dbd67aaa9c",
+      "status": "bundled",
+      "notes": "Installed snapshot. Upstream README explicitly declares MIT; no standalone upstream LICENSE. Distribution includes the pinned README and standard MIT text; local adaptations preserved."
+    },
+    {
+      "id": "space-xhs-positioning",
+      "kind": "skill",
+      "source": "https://github.com/SpaceZephyr/creator-buddy",
+      "license": "MIT",
+      "path": "skills/space-xhs-positioning",
+      "revision": "edf46c567ff54b72ee2157d06f3a02dbd67aaa9c",
+      "status": "bundled",
+      "notes": "Installed snapshot. Upstream README explicitly declares MIT; no standalone upstream LICENSE. Distribution includes the pinned README and standard MIT text; local adaptations preserved."
+    },
+    {
+      "id": "xhs-html",
+      "kind": "skill",
+      "source": "https://github.com/SpaceZephyr/creator-buddy",
+      "license": "MIT",
+      "path": "skills/xhs-html",
+      "revision": "edf46c567ff54b72ee2157d06f3a02dbd67aaa9c",
+      "status": "bundled",
+      "notes": "Installed snapshot. Upstream README explicitly declares MIT; no standalone upstream LICENSE. Distribution includes the pinned README and standard MIT text; local adaptations preserved."
+    },
+    {
+      "id": "agent-reach",
+      "kind": "skill",
+      "source": "https://github.com/Panniantong/Agent-Reach",
+      "license": "MIT",
+      "path": "skills/agent-reach",
+      "revision": "94f06c1969dfc1834001269d79d3ad0972d9dee6",
+      "status": "bundled",
+      "notes": "Installed snapshot; local edits preserved and private installation records excluded."
+    },
+    {
+      "id": "imagegen",
+      "kind": "skill",
+      "source": "OpenAI bundled imagegen Skill (Apache-2.0 license included locally)",
+      "license": "Apache-2.0",
+      "path": "skills/imagegen",
+      "revision": null,
+      "status": "bundled",
+      "notes": "Host-provided source snapshot. This does not include hosted model access or entitlement; no upstream repository revision claimed."
+    },
+    {
+      "id": "baoyu-post-to-x",
+      "kind": "skill",
+      "source": "https://github.com/JimLiu/baoyu-skills",
+      "license": "MIT",
+      "path": "skills/baoyu-post-to-x",
+      "revision": "1567581c26ec29f4216c6e6835415bf30343b0e3",
+      "status": "bundled",
+      "notes": "Installed snapshot; local edits preserved and private installation records excluded."
+    },
+    {
+      "id": "baoyu-post-to-weibo",
+      "kind": "skill",
+      "source": "https://github.com/JimLiu/baoyu-skills",
+      "license": "MIT",
+      "path": "skills/baoyu-post-to-weibo",
+      "revision": "1567581c26ec29f4216c6e6835415bf30343b0e3",
+      "status": "bundled",
+      "notes": "Installed snapshot; local edits preserved and private installation records excluded."
+    },
+    {
+      "id": "douyin-upload",
+      "kind": "skill",
+      "source": "https://github.com/dreammis/social-auto-upload",
+      "license": "MIT",
+      "path": "skills/douyin-upload",
+      "revision": "0012d2c355f88f683cc38dde2a2db209e14091bc",
+      "status": "bundled",
+      "notes": "Installed snapshot; local edits preserved and private installation records excluded."
+    },
+    {
+      "id": "xiaohongshu-upload",
+      "kind": "skill",
+      "source": "https://github.com/dreammis/social-auto-upload",
+      "license": "MIT",
+      "path": "skills/xiaohongshu-upload",
+      "revision": "0012d2c355f88f683cc38dde2a2db209e14091bc",
+      "status": "bundled",
+      "notes": "Installed snapshot; local edits preserved and private installation records excluded."
+    },
+    {
+      "id": "bilibili-upload",
+      "kind": "skill",
+      "source": "https://github.com/dreammis/social-auto-upload",
+      "license": "MIT",
+      "path": "skills/bilibili-upload",
+      "revision": "0012d2c355f88f683cc38dde2a2db209e14091bc",
+      "status": "bundled",
+      "notes": "Installed snapshot; local edits preserved and private installation records excluded."
+    },
+    {
+      "id": "stylewx-article",
+      "kind": "skill",
+      "source": "https://github.com/wjunhere/stylewx",
+      "license": "MIT",
+      "path": "skills/stylewx-article",
+      "revision": "fdbf349a216b2e31148ff3e05bc904ec19bb56e6",
+      "status": "bundled",
+      "notes": "Installed snapshot; local edits preserved and private installation records excluded."
+    },
+    {
+      "id": "obsidian-cli",
+      "kind": "skill",
+      "source": "https://github.com/kepano/obsidian-skills",
+      "license": "MIT",
+      "path": "skills/obsidian-cli",
+      "revision": "3ccff5338ea700537839b21900aa5358a0402c98",
+      "status": "bundled",
+      "notes": "Installed snapshot; local edits preserved and private installation records excluded."
+    },
+    {
+      "id": "obsidian-markdown",
+      "kind": "skill",
+      "source": "https://github.com/kepano/obsidian-skills",
+      "license": "MIT",
+      "path": "skills/obsidian-markdown",
+      "revision": "3ccff5338ea700537839b21900aa5358a0402c98",
+      "status": "bundled",
+      "notes": "Installed snapshot; local edits preserved and private installation records excluded."
+    },
+    {
+      "id": "tiktok-upload",
+      "kind": "skill",
+      "source": "https://github.com/BLACKIELF/gbroskill",
+      "license": "MIT",
+      "path": "skills/tiktok-upload",
+      "revision": null,
+      "status": "bundled",
+      "notes": "Original GBro instructions. autotok and the runtime bridge have a separate AGPL license."
+    },
+    {
+      "id": "social-auto-upload",
+      "kind": "tool-source",
+      "source": "https://github.com/dreammis/social-auto-upload",
+      "license": "MIT",
+      "path": "vendor/social-auto-upload",
+      "revision": "0012d2c355f88f683cc38dde2a2db209e14091bc",
+      "status": "bundled",
+      "notes": "Tracked source snapshot with current local code patches. No credentials, profiles, installed packages or Git history."
+    },
+    {
+      "id": "autotok",
+      "kind": "mcp-source",
+      "source": "https://github.com/makiisthenes/TiktokAutoUploader",
+      "license": "AGPL-3.0-only",
+      "path": "vendor/autotok",
+      "revision": "6516870d64591a1d0fe2af6cecdfa48660b732fc",
+      "status": "bundled",
+      "notes": "Tracked source snapshot with current local code patches. No credentials, profiles, installed packages or Git history."
+    },
+    {
+      "id": "video-use",
+      "kind": "tool-source",
+      "source": "https://github.com/browser-use/video-use",
+      "license": "MIT",
+      "path": "vendor/video-use",
+      "revision": "b877063835e6ea6e457124da7e28a0ae26691dc3",
+      "status": "bundled",
+      "notes": "Tracked source snapshot with current local code patches. No credentials, profiles, installed packages or Git history."
+    },
+    {
+      "id": "stylewx",
+      "kind": "mcp-source",
+      "source": "https://github.com/wjunhere/stylewx",
+      "license": "MIT",
+      "path": "vendor/stylewx",
+      "revision": "fdbf349a216b2e31148ff3e05bc904ec19bb56e6",
+      "status": "bundled",
+      "notes": "Pinned upstream source; not installed or activated by unpacking."
+    },
+    {
+      "id": "agent-reach-runtime",
+      "kind": "tool-source",
+      "source": "https://github.com/Panniantong/Agent-Reach",
+      "license": "MIT",
+      "path": "vendor/agent-reach",
+      "revision": "94f06c1969dfc1834001269d79d3ad0972d9dee6",
+      "status": "bundled",
+      "notes": "Pinned upstream source; not installed or activated by unpacking."
+    },
+    {
+      "id": "biliup",
+      "kind": "tool-source",
+      "source": "https://github.com/biliup/biliup",
+      "license": "MIT",
+      "path": "vendor/biliup",
+      "revision": "3d884a570be7761e65413785cfc63d88a97ef0e5",
+      "status": "bundled",
+      "notes": "Pinned upstream source; not installed or activated by unpacking."
+    },
+    {
+      "id": "cheat-on-content",
+      "kind": "optional-tool-source",
+      "source": "https://github.com/XBuilderLAB/cheat-on-content",
+      "license": "MIT",
+      "path": "vendor/cheat-on-content",
+      "revision": "2d8211efb9e7ed3ef21f71a78d13f1563be6f86e",
+      "status": "bundled",
+      "notes": "Pinned upstream source; not installed or activated by unpacking."
+    },
+    {
+      "id": "video-use-skill",
+      "kind": "skill",
+      "source": "https://github.com/browser-use/video-use",
+      "license": "MIT",
+      "path": "skills/video-use",
+      "revision": "b877063835e6ea6e457124da7e28a0ae26691dc3",
+      "status": "bundled",
+      "notes": "Local active Skill changes preserved; corresponding source is vendor/video-use."
+    },
+    {
+      "id": "browser-skill",
+      "kind": "host-browser",
+      "source": null,
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Installed bsk/bundled documentation has no confirmed redistribution license. Use the browser interface supported by your host."
+    },
+    {
+      "id": "metricool",
+      "kind": "hosted-mcp",
+      "source": "https://metricool.com",
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Hosted connector/service; no service implementation or account authorization can be redistributed. Connect your own account in your host."
+    },
+    {
+      "id": "weixin-reader",
+      "kind": "external-mcp",
+      "source": null,
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Tool available in the original host; implementation provenance and redistribution license not established. No server source bundled."
+    },
+    {
+      "id": "wechat-official",
+      "kind": "official-api",
+      "source": "https://developers.weixin.qq.com/doc/offiaccount/Getting_Started/Overview.html",
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Bring your own official account, scopes and credentials. Draft, publish and mass-send permissions are separate."
+    },
+    {
+      "id": "miniprogram-official",
+      "kind": "official-api",
+      "source": "https://developers.weixin.qq.com/miniprogram/dev/framework/",
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Bring your own app and official integration. Not a generic social-post endpoint."
+    },
+    {
+      "id": "yichen-content-archive",
+      "kind": "skill",
+      "source": null,
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Installed personal content archive has no confirmed redistribution license. Not copied. Use an authorized browser or Agent-Reach backend for equivalent supported reads."
+    },
+    {
+      "id": "yichen-wechat-mp-batch-exporter",
+      "kind": "skill",
+      "source": null,
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Installed private/local workflow has no confirmed redistribution license; article archives, keys and databases excluded."
+    },
+    {
+      "id": "jev-use",
+      "kind": "skill-service",
+      "source": null,
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Local wrapper/service with no established redistribution grant. Not required for the main workflow."
+    },
+    {
+      "id": "feishu-document-layout",
+      "kind": "skill",
+      "source": null,
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Local custom Skill; upstream rights not established for public redistribution. Not copied."
+    },
+    {
+      "id": "xiaohongshu-ops-skill",
+      "kind": "skill",
+      "source": "https://github.com/Xiangyu-CAS/xiaohongshu-ops-skill",
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "No LICENSE found in upstream repository; no source copied. OpenClaw-specific workflow is optional."
+    },
+    {
+      "id": "wechat-apple-layout",
+      "kind": "skill",
+      "source": "https://github.com/S-N-Lewis/wechat-apple-layout",
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "No confirmed open-source license. Not copied; use separately acquired rights."
+    },
+    {
+      "id": "zzsy-dir-skill",
+      "kind": "skill",
+      "source": null,
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Private/local source and no confirmed redistribution license. No unrelated customer content copied."
+    },
+    {
+      "id": "liquid-glass",
+      "kind": "skill",
+      "source": null,
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Personal design workflow with project references; no confirmed redistribution grant. Use your own licensed visual tool."
+    },
+    {
+      "id": "iphone-use",
+      "kind": "host-plugin",
+      "source": null,
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Host plugin and real-device permissions are separate; not bundled."
+    },
+    {
+      "id": "documents",
+      "kind": "host-plugin",
+      "source": null,
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Use the document capability supplied by your host; no proprietary plugin source bundled."
+    },
+    {
+      "id": "general-collaboration-habits",
+      "kind": "private-policy",
+      "source": null,
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Personal collaboration/paths/recipient policy not distributed; generic authorization and delivery boundaries are written directly into GBro."
+    },
+    {
+      "id": "multi-agent-management",
+      "kind": "private-policy",
+      "source": null,
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Private account management is not a content publishing dependency and is not distributed."
+    },
+    {
+      "id": "oracle",
+      "kind": "optional-tool",
+      "source": null,
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Historical content subject/optional research helper; not required to run GBro."
+    },
+    {
+      "id": "reverse-engineer-anything",
+      "kind": "content-subject",
+      "source": null,
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "REA is the subject of a separate content task, not a required GBro dependency; no reverse-engineering tools included by implication."
+    },
+    {
+      "id": "echo-design-request",
+      "kind": "unresolved-skill",
+      "source": null,
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "The name 回声造镜 from the content discussion has no matching installed Skill entry. Do not substitute the unrelated private echo-valley-design project."
+    },
+    {
+      "id": "xiaohongshu-mcp",
+      "kind": "optional-backend",
+      "source": "https://github.com/xpzouying/xiaohongshu-mcp",
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Documented optional read backend, not installed or used in the audited local route. Obtain upstream separately if chosen."
+    },
+    {
+      "id": "opencli",
+      "kind": "optional-backend",
+      "source": "https://github.com/jackwener/opencli",
+      "license": "NOASSERTION",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Documented optional read backend; not installed in the audited local route. Browser extension and your own authorized session required."
+    },
+    {
+      "id": "lark-shared",
+      "kind": "skill",
+      "source": "https://github.com/larksuite/cli",
+      "license": "MIT",
+      "path": "skills/lark-shared",
+      "revision": "97f0dabe7b046f45cfd820453b8305aeed47a601",
+      "status": "bundled",
+      "notes": "Official MIT license verified; installed snapshot, no credentials."
+    },
+    {
+      "id": "lark-im",
+      "kind": "skill",
+      "source": "https://github.com/larksuite/cli",
+      "license": "MIT",
+      "path": "skills/lark-im",
+      "revision": "97f0dabe7b046f45cfd820453b8305aeed47a601",
+      "status": "bundled",
+      "notes": "Official MIT license verified; installed snapshot, no credentials."
+    },
+    {
+      "id": "lark-doc",
+      "kind": "skill",
+      "source": "https://github.com/larksuite/cli",
+      "license": "MIT",
+      "path": "skills/lark-doc",
+      "revision": "97f0dabe7b046f45cfd820453b8305aeed47a601",
+      "status": "bundled",
+      "notes": "Official MIT license verified; installed snapshot, no credentials."
+    },
+    {
+      "id": "lark-drive",
+      "kind": "skill",
+      "source": "https://github.com/larksuite/cli",
+      "license": "MIT",
+      "path": "skills/lark-drive",
+      "revision": "97f0dabe7b046f45cfd820453b8305aeed47a601",
+      "status": "bundled",
+      "notes": "Official MIT license verified; installed snapshot, no credentials."
+    },
+    {
+      "id": "lark-cli",
+      "kind": "tool-source",
+      "source": "https://github.com/larksuite/cli",
+      "license": "MIT",
+      "path": "vendor/lark-cli",
+      "revision": "97f0dabe7b046f45cfd820453b8305aeed47a601",
+      "status": "bundled",
+      "notes": "Pinned official CLI source. Build/install and account authorization remain separate."
+    },
+    {
+      "id": "gbro-tiktok-bridge",
+      "kind": "mcp-bridge",
+      "source": "https://github.com/BLACKIELF/gbroskill",
+      "license": "AGPL-3.0-only",
+      "path": "runtime/tiktok-entry.py",
+      "revision": null,
+      "status": "bundled",
+      "notes": "Source provided in full; integrates autotok. Standard AGPL obligations apply, including modified network services."
+    }
+  ]
+}

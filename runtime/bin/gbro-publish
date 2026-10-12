@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2026 AiGoodBro contributors
+set -euo pipefail
+umask 077
+GBRO_REPO="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+GBRO_DATA_DIR="${GBRO_DATA_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/gbroskill}"
+GBRO_SKILLS_DIR="${GBRO_SKILLS_DIR:-$GBRO_REPO/skills}"
+GBRO_RUNTIME_ROOT="${GBRO_RUNTIME_ROOT:-$GBRO_REPO/vendor}"
+GBRO_BUN="${GBRO_BUN:-bun}"
+GBRO_SAU_PYTHON="${GBRO_SAU_PYTHON:-$GBRO_RUNTIME_ROOT/social-auto-upload/.venv/bin/python}"
+GBRO_TIKTOK_PYTHON="${GBRO_TIKTOK_PYTHON:-$GBRO_RUNTIME_ROOT/autotok/.venv/bin/python}"
+export GBRO_REPO GBRO_DATA_DIR GBRO_SKILLS_DIR GBRO_RUNTIME_ROOT
+if [[ -n "${GBRO_CHROME:-}" ]]; then
+  export X_BROWSER_CHROME_PATH="$GBRO_CHROME" WEIBO_BROWSER_CHROME_PATH="$GBRO_CHROME"
+fi
+export X_BROWSER_PROFILE_DIR="$GBRO_DATA_DIR/profiles/x"
+export WEIBO_BROWSER_PROFILE_DIR="$GBRO_DATA_DIR/profiles/weibo"
+action="${1:---help}"
+if [[ $# -gt 0 ]]; then shift; fi
+case "$action" in
+  douyin|xiaohongshu|bilibili|tencent|weibo-video)
+    platform="$action"; [[ "$platform" != weibo-video ]] || platform=weibo
+    exec "$GBRO_SAU_PYTHON" "$GBRO_RUNTIME_ROOT/social-auto-upload/sau_cli.py" "$platform" "$@" ;;
+  x) exec "$GBRO_BUN" "$GBRO_SKILLS_DIR/baoyu-post-to-x/scripts/x-browser.ts" "$@" ;;
+  x-video) exec "$GBRO_BUN" "$GBRO_SKILLS_DIR/baoyu-post-to-x/scripts/x-video.ts" "$@" ;;
+  weibo) exec "$GBRO_BUN" "$GBRO_SKILLS_DIR/baoyu-post-to-weibo/scripts/weibo-post.ts" "$@" ;;
+  tiktok) exec "$GBRO_TIKTOK_PYTHON" "$GBRO_REPO/runtime/tiktok-entry.py" "$@" ;;
+  tiktok-mcp) exec "$GBRO_TIKTOK_PYTHON" "$GBRO_REPO/runtime/tiktok-entry.py" --mcp "$@" ;;
+  doctor) exec "${GBRO_PYTHON:-python3}" "$GBRO_REPO/scripts/doctor.py" ;;
+  --help|-h|help)
+    cat <<'HELP'
+GBro source distribution
+  gbro-publish doctor                  Local files/runtime inventory; no login or upload
+  gbro-publish douyin --help            Douyin SAU interface
+  gbro-publish xiaohongshu --help       Xiaohongshu SAU interface
+  gbro-publish bilibili --help          Bilibili SAU / biliup interface
+  gbro-publish tencent --help           Video Channels interface
+  gbro-publish weibo-video --help       Weibo video interface
+  gbro-publish weibo --help             Weibo editor filler
+  gbro-publish x --help                 X image/text editor
+  gbro-publish x-video --help           X video editor
+  gbro-publish tiktok --help            International TikTok CLI
+  gbro-publish tiktok-mcp               International TikTok MCP (stdio)
+Read docs/INSTALL.md and docs/TOOL-BOUNDARIES.md before authorizing remote writes.
+Upload, submit, schedule and remote drafts are real platform actions.
+HELP
+    ;;
+  *) printf 'Unknown action: %s\n' "$action" >&2; exit 2 ;;
+esac

@@ -1,0 +1,149 @@
+// Copyright (c) 2026 Lark Technologies Pte. Ltd.
+// SPDX-License-Identifier: MIT
+
+package skillscheck
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func resetPending(t *testing.T) {
+	t.Helper()
+	SetPending(nil)
+	t.Cleanup(func() { SetPending(nil) })
+}
+
+func TestInit_InSync_NoNotice(t *testing.T) {
+	clearSkillsSkipEnv(t)
+	resetPending(t)
+	t.Setenv("LARKSUITE_CLI_CONFIG_DIR", t.TempDir())
+	if err := WriteState(SkillsState{Version: "1.0.21"}); err != nil {
+		t.Fatal(err)
+	}
+	Init("1.0.21")
+	if got := GetPending(); got != nil {
+		t.Errorf("GetPending() = %+v, want nil (in-sync)", got)
+	}
+}
+
+func TestInit_ColdStart_NoNotice(t *testing.T) {
+	clearSkillsSkipEnv(t)
+	resetPending(t)
+	t.Setenv("LARKSUITE_CLI_CONFIG_DIR", t.TempDir())
+	Init("1.0.21")
+	if got := GetPending(); got != nil {
+		t.Errorf("GetPending() = %+v, want nil (cold start is silent)", got)
+	}
+}
+
+func TestInit_NormalizedVersion_NoNotice(t *testing.T) {
+	clearSkillsSkipEnv(t)
+	resetPending(t)
+	t.Setenv("LARKSUITE_CLI_CONFIG_DIR", t.TempDir())
+	if err := WriteState(SkillsState{Version: "1.0.21"}); err != nil {
+		t.Fatal(err)
+	}
+	Init("v1.0.21")
+	if got := GetPending(); got != nil {
+		t.Errorf("GetPending() = %+v, want nil (normalized versions are in-sync)", got)
+	}
+}
+
+func TestInitForSourceNoticesAtSameVersionWhenSourceChanges(t *testing.T) {
+	clearSkillsSkipEnv(t)
+	resetPending(t)
+	t.Setenv("LARKSUITE_CLI_CONFIG_DIR", t.TempDir())
+	if err := WriteState(SkillsState{
+		Version:        "1.0.21",
+		SourceIdentity: "manifest:first",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	InitForSource("1.0.21", "manifest:second", true)
+	if got := GetPending(); got == nil || !got.SourceChanged || got.Message() != "lark-cli skills were installed from a different distribution source, run: lark-cli update" {
+		t.Fatalf("want source-change notice, got %+v", got)
+	}
+}
+
+// TestInitForSourceNoticesOpaqueManifestVersion pins the manifest-mode
+// regression: an opaque target version must not be suppressed by the
+// SemVer/release gate.
+func TestInitForSourceNoticesOpaqueManifestVersion(t *testing.T) {
+	clearSkillsSkipEnv(t)
+	resetPending(t)
+	t.Setenv("LARKSUITE_CLI_CONFIG_DIR", t.TempDir())
+	if err := WriteState(SkillsState{
+		Version:        "1.0.21",
+		SourceIdentity: "manifest:dist",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	InitForSource("v1.0.21", "manifest:dist", true)
+	got := GetPending()
+	if got == nil {
+		t.Fatal("GetPending() = nil, want notice for opaque manifest version drift")
+	}
+	if got.Current != "1.0.21" || got.Target != "v1.0.21" {
+		t.Errorf("notice = %+v", got)
+	}
+}
+
+func TestInit_OfficialSkillsUnknown_NoticeAtSameVersion(t *testing.T) {
+	clearSkillsSkipEnv(t)
+	resetPending(t)
+	t.Setenv("LARKSUITE_CLI_CONFIG_DIR", t.TempDir())
+	if err := WriteState(SkillsState{Version: "1.0.21", OfficialSkillsUnknown: true}); err != nil {
+		t.Fatal(err)
+	}
+	Init("1.0.21")
+	got := GetPending()
+	if got == nil {
+		t.Fatal("GetPending() = nil, want notice for unknown official Skill set")
+	}
+	if got.Current != "1.0.21" || got.Target != "1.0.21" || !got.OfficialUnknown {
+		t.Errorf("notice = %+v, want same-version official_unknown notice", got)
+	}
+}
+
+func TestInit_Drift_NoticeWithStateVersion(t *testing.T) {
+	clearSkillsSkipEnv(t)
+	resetPending(t)
+	t.Setenv("LARKSUITE_CLI_CONFIG_DIR", t.TempDir())
+	if err := WriteState(SkillsState{Version: "1.0.20"}); err != nil {
+		t.Fatal(err)
+	}
+	Init("1.0.21")
+	got := GetPending()
+	if got == nil {
+		t.Fatal("GetPending() = nil, want non-nil for drift")
+	}
+	if got.Current != "1.0.20" || got.Target != "1.0.21" {
+		t.Errorf("notice = %+v, want {Current:\"1.0.20\", Target:\"1.0.21\"}", got)
+	}
+}
+
+func TestInit_Skipped_NoNotice(t *testing.T) {
+	clearSkillsSkipEnv(t)
+	resetPending(t)
+	t.Setenv("LARKSUITE_CLI_CONFIG_DIR", t.TempDir())
+	Init("DEV")
+	if got := GetPending(); got != nil {
+		t.Errorf("GetPending() = %+v, want nil (skip rules met)", got)
+	}
+}
+
+func TestInit_ReadStateError_FailsClosed(t *testing.T) {
+	clearSkillsSkipEnv(t)
+	resetPending(t)
+	dir := t.TempDir()
+	t.Setenv("LARKSUITE_CLI_CONFIG_DIR", dir)
+	if err := os.MkdirAll(filepath.Join(dir, "skills-state.json"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	Init("1.0.21")
+	if got := GetPending(); got != nil {
+		t.Errorf("GetPending() = %+v, want nil (fail closed on I/O error)", got)
+	}
+}

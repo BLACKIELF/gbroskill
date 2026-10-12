@@ -1,0 +1,54 @@
+{
+  "name": "@stylewx/preview",
+  "version": "0.6.0",
+  "description": "stylewx preview: render styled HTML to a PNG screenshot via Playwright (headless Chromium). iPhone-like viewport (390px) for WeChat previews.",
+  "keywords": [
+    "wechat",
+    "preview",
+    "screenshot",
+    "playwright"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "wjunhere",
+    "url": "https://github.com/wjunhere"
+  },
+  "homepage": "https://github.com/wjunhere/stylewx#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wjunhere/stylewx.git",
+    "directory": "packages/preview"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "@stylewx/components": "workspace:*",
+    "@stylewx/theme": "workspace:*",
+    "mermaid": "^11.17.2",
+    "playwright": "^1.49.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false
+}

@@ -1,0 +1,67 @@
+{
+  "name": "@stylewx/mcp-server",
+  "version": "0.6.0",
+  "description": "stylewx MCP Server: exposes styling/validate/publish capabilities to AI agents (Kimi Code / Claude Code / Cursor). stdio + Streamable HTTP.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "wechat",
+    "wechat-article",
+    "markdown",
+    "ai-agent",
+    "微信公众号"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "wjunhere",
+    "url": "https://github.com/wjunhere"
+  },
+  "homepage": "https://github.com/wjunhere/stylewx#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wjunhere/stylewx.git",
+    "directory": "apps/mcp-server"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "stylewx-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "editor.html"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "dev": "node --import tsx/esm src/index.ts --transport stdio",
+    "inspector": "node dist/index.js --transport stdio",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "@stylewx/components": "workspace:*",
+    "@stylewx/core": "workspace:*",
+    "@stylewx/preview": "workspace:*",
+    "@stylewx/publisher": "workspace:*",
+    "@stylewx/service": "workspace:*",
+    "@stylewx/theme": "workspace:*",
+    "@stylewx/validator": "workspace:*",
+    "zod": "^4.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

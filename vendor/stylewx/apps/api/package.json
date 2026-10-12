@@ -1,0 +1,58 @@
+{
+  "name": "@stylewx/api",
+  "version": "0.6.0",
+  "description": "stylewx REST API: mirrors the MCP tools as HTTP endpoints, reusing the same service layer.",
+  "keywords": [
+    "wechat",
+    "wechat-article",
+    "rest-api",
+    "hono",
+    "markdown"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "wjunhere",
+    "url": "https://github.com/wjunhere"
+  },
+  "homepage": "https://github.com/wjunhere/stylewx#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wjunhere/stylewx.git",
+    "directory": "apps/api"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "dev": "node --import tsx/esm src/index.ts",
+    "start": "node dist/index.js",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.0",
+    "@stylewx/publisher": "workspace:*",
+    "@stylewx/service": "workspace:*",
+    "@stylewx/theme": "workspace:*",
+    "hono": "^4.6.0",
+    "zod": "^4.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
