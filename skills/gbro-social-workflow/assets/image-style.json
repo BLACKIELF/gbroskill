@@ -1,0 +1,226 @@
+{
+  "font": {
+    "family": "PingFang SC",
+    "regular": {
+      "postscript_name": "PingFangSC-Regular",
+      "weight": 400
+    },
+    "semibold": {
+      "postscript_name": "PingFangSC-Semibold",
+      "weight": 600
+    },
+    "synthesis": "none",
+    "fallback": null
+  },
+  "roles": {
+    "cover_title": {
+      "weight": 600,
+      "line_height": 1.16,
+      "letter_spacing_em": -0.025
+    },
+    "cover_secondary": {
+      "weight": 600,
+      "line_height": 1.25,
+      "letter_spacing_em": -0.025
+    },
+    "eyebrow": {
+      "weight": 600,
+      "line_height": 1.5,
+      "letter_spacing_em": 0
+    },
+    "page_title": {
+      "weight": 600,
+      "line_height": 1.25,
+      "letter_spacing_em": -0.015
+    },
+    "body": {
+      "weight": 400,
+      "line_height": 1.55,
+      "letter_spacing_em": 0
+    },
+    "body_emphasis": {
+      "weight": 600,
+      "line_height": 1.55,
+      "letter_spacing_em": 0
+    },
+    "caption": {
+      "weight": 400,
+      "line_height": 1.4,
+      "letter_spacing_em": 0
+    },
+    "footer": {
+      "weight": 400,
+      "line_height": 1.4,
+      "letter_spacing_em": 0
+    }
+  },
+  "presets": {
+    "video_cover_4_3": {
+      "width": 1600,
+      "height": 1200,
+      "safe_margin_x": 120,
+      "safe_margin_y": 60,
+      "module_gap": 24,
+      "font_size_px": {
+        "cover_title": 136,
+        "cover_secondary": 104,
+        "eyebrow": 40,
+        "page_title": 72,
+        "body": 44,
+        "body_emphasis": 44,
+        "caption": 31,
+        "footer": 28
+      }
+    },
+    "portrait_3_4": {
+      "width": 1080,
+      "height": 1440,
+      "safe_margin_x": 72,
+      "safe_margin_y": 72,
+      "module_gap": 24,
+      "font_size_px": {
+        "cover_title": 120,
+        "cover_secondary": 84,
+        "eyebrow": 32,
+        "page_title": 64,
+        "body": 40,
+        "body_emphasis": 40,
+        "caption": 28,
+        "footer": 28
+      }
+    },
+    "landscape_16_9": {
+      "width": 1920,
+      "height": 1080,
+      "safe_margin_x": 96,
+      "safe_margin_y": 56,
+      "module_gap": 24,
+      "font_size_px": {
+        "cover_title": 124,
+        "cover_secondary": 96,
+        "eyebrow": 40,
+        "page_title": 72,
+        "body": 44,
+        "body_emphasis": 44,
+        "caption": 28,
+        "footer": 28
+      }
+    },
+    "wechat_cover": {
+      "width": 1410,
+      "height": 600,
+      "safe_margin_x": 60,
+      "safe_margin_y": 40,
+      "module_gap": 20,
+      "font_size_px": {
+        "cover_title": 104,
+        "cover_secondary": 88,
+        "eyebrow": 28,
+        "page_title": 48,
+        "body": 32,
+        "body_emphasis": 32,
+        "caption": 23,
+        "footer": 23
+      }
+    },
+    "video_9_16": {
+      "width": 1080,
+      "height": 1920,
+      "safe_margin_x": 72,
+      "safe_margin_y": 72,
+      "module_gap": 24,
+      "font_size_px": {
+        "cover_title": 120,
+        "cover_secondary": 84,
+        "eyebrow": 32,
+        "page_title": 64,
+        "body": 40,
+        "body_emphasis": 40,
+        "caption": 28,
+        "footer": 28
+      }
+    }
+  },
+  "themes": {
+    "light": {
+      "background": "#FFFFFF",
+      "text": "#171B25",
+      "muted": "#687282",
+      "red": "#EF3438",
+      "blue": "#2563EB",
+      "surface": "#F6F7FA",
+      "border": "#E6E8ED"
+    },
+    "black_glass": {
+      "background": "#030409",
+      "text": "#FFFFFF",
+      "muted": "#A1A3B0",
+      "blue_glow": {
+        "color": "#244B96",
+        "opacity": 0.38
+      },
+      "red_glow": {
+        "color": "#832440",
+        "opacity": 0.28
+      },
+      "accent_gradient": [
+        {
+          "offset": 0,
+          "color": "#FFAB8E"
+        },
+        {
+          "offset": 0.5,
+          "color": "#FF6B62"
+        },
+        {
+          "offset": 1,
+          "color": "#DC5C80"
+        }
+      ],
+      "title_gradient": [
+        {
+          "offset": 0,
+          "color": "#DFE4FF"
+        },
+        {
+          "offset": 0.45,
+          "color": "#FFFFFF"
+        },
+        {
+          "offset": 0.65,
+          "color": "#FFFFFF"
+        },
+        {
+          "offset": 1,
+          "color": "#CFD7FF"
+        }
+      ],
+      "surface_opacity": 0.013,
+      "border_opacity": 0.06
+    }
+  },
+  "output": {
+    "format": "png",
+    "opaque": true,
+    "device_scale_factor": 1
+  },
+  "video_packaging": {
+    "canvas_preset": "video_9_16",
+    "theme": "black_glass",
+    "landscape_source_fit": "contain",
+    "landscape_source_position": "center",
+    "background_regions": [
+      "top",
+      "bottom"
+    ],
+    "material": "black_frosted_glass",
+    "motion": "slow_subtle_liquid_glass",
+    "glows": [
+      "blue_glow",
+      "red_glow"
+    ],
+    "title_region": "top",
+    "subtitle_region": "bottom",
+    "preserve_source_audio": true
+  }
+}
