@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "release": "1012v1",
+  "release": "1015v2",
   "auditDate": "2026-10-12",
   "scope": "Current GBro directly referenced Skills and publishing/reading runtimes; optional, hosted and license-unresolved dependencies listed separately. Package-manager transitive dependencies are resolved from the included manifests/lockfiles, not vendored installed environments.",
   "components": [

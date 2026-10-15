@@ -12,6 +12,7 @@ def files():
         if p.is_symlink():raise SystemExit('Refuse symlink: '+str(rel))
         if not p.is_file() or any(x in SKIP for x in rel.parts) or str(rel) in META or p.name=='.DS_Store' or p.suffix in ['.pyc','.log']:continue
         if p.name=='.env' or (p.name.startswith('.env.') and p.name not in ['.env.example','.env.template']):continue
+        if p.name.endswith('.local.json'):continue
         yield p
 
 def main():

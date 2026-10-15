@@ -15,3 +15,6 @@
 *.log
 /dist/
 /private/
+
+# Local publishing conversation and receipt pointers
+**/*.local.json
