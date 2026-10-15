@@ -2,7 +2,7 @@
 
 把资料、链接和视频整理成可核验的稿件、封面、字幕与分平台发布素材。包含当前 GBro 规则，以及可再分发的配套 Skill、CLI 与 MCP 源码。
 
-**版本：1015v3 · 核验日期：2026-10-15**
+**版本：1015v4 · 核验日期：2026-10-15**
 
 [安装与配置](docs/INSTALL.md) · [完整依赖清单](docs/DEPENDENCIES.md) · [工具能力边界](docs/TOOL-BOUNDARIES.md) · [平台尺寸与话题](skills/gbro-social-workflow/references/platform-specs.md) · [下载发布包](https://github.com/BLACKIELF/gbroskill/releases/latest)
 
