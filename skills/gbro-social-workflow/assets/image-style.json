@@ -221,6 +221,8 @@
     ],
     "title_region": "top",
     "subtitle_region": "bottom",
-    "preserve_source_audio": true
+    "preserve_source_audio": true,
+    "source_aspect_ratio": "16:9",
+    "applies_to": "16:9_source_packaging_only"
   }
 }

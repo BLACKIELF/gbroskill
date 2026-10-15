@@ -13,8 +13,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "6fd61a0b97ebec41e99273625612c0c022acd7a3b93102ec48c3a58a1ec9e5b3",
-      "bytes": 2866
+      "sha256": "1ad9bbc8a8d5b496cdde00b2d8fc138f33a7c97e8835ca71c63066fabeec68e2",
+      "bytes": 2921
     },
     {
       "path": "CONTRIBUTING.md",
@@ -98,8 +98,8 @@
     },
     {
       "path": "docs/VERIFICATION.md",
-      "sha256": "2a89a592b63711a0b1e4d94c84deb85da7b97cd7792be369a0c6a81405e76953",
-      "bytes": 4225
+      "sha256": "b9b9bcdb48234a4b69c11af450a3c8e3db563551d8521f24266e4e407c6ed71c",
+      "bytes": 4262
     },
     {
       "path": "patches/social-auto-upload-local.patch",
@@ -728,8 +728,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/SKILL.md",
-      "sha256": "43c6157c3d8ba9f426ad406dfed1f8b1044204b87b39875d878602be6fcf8ea7",
-      "bytes": 22159
+      "sha256": "a9904c993ff54c211434f8575f9be283933918b934922c7525f12eb04dd76d90",
+      "bytes": 22350
     },
     {
       "path": "skills/gbro-social-workflow/agents/openai.yaml",
@@ -738,8 +738,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/assets/image-style.json",
-      "sha256": "30a1517204ed87bca7e4eeaa34da423cc19e547adac3d03fc8df50f1d8a1f704",
-      "bytes": 4776
+      "sha256": "1c3254f261ef30a233e23329fa0d851c3abf13fe143f8ff78d6343d708570bcd",
+      "bytes": 4859
     },
     {
       "path": "skills/gbro-social-workflow/references/ai-short-video.md",
@@ -763,8 +763,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/references/delivery.md",
-      "sha256": "22fcdaab5c20190a9d7aed724e153c257a32d812d0f94c6bca412372f2b4fa09",
-      "bytes": 25637
+      "sha256": "b2cf80f2000d396124dd4bca8171e20b6571abe2a5f215d83f6286f28c7b4b81",
+      "bytes": 25849
     },
     {
       "path": "skills/gbro-social-workflow/references/distribution.md",
@@ -778,8 +778,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/references/platform-specs.md",
-      "sha256": "ede40a7736a0d94282866de5121ff156015c246278541b5c756cb69ddbc79381",
-      "bytes": 16297
+      "sha256": "aaf3b78412f6d46e02749528aa52fb0781cdc10b015a4e39a106a280d38e141b",
+      "bytes": 16382
     },
     {
       "path": "skills/gbro-social-workflow/references/platform-tools.md",
@@ -818,8 +818,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/使用说明.md",
-      "sha256": "09bb458ad3f37cbb4edc8ad4b24f3e4fd88573bcd596c97363f7d03f8f78d8a7",
-      "bytes": 8349
+      "sha256": "e62839112904a200ce37fa7b635748f10601dadd61ff1182fd83d3660cb54959",
+      "bytes": 8430
     },
     {
       "path": "skills/human-writing/GBRO-DISTRIBUTION.md",
