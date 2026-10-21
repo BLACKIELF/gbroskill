@@ -13,8 +13,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "7654680a6d15680c2544795b7ba03ef4df2241b5e4a476a5c7b55b71710380f8",
-      "bytes": 3686
+      "sha256": "d67e6be6140ebb36da2e137b0c84ff7099b3c4e959cedf65fe4f64261762820d",
+      "bytes": 4390
     },
     {
       "path": "CONTRIBUTING.md",
@@ -38,8 +38,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "0a82724949fcc66f3217fbf81ab79ed7e4463b820b8e881717c0641a23f995f3",
-      "bytes": 5047
+      "sha256": "eb106a98e98aa6b5d43fc7847698f7f2eb2bafd160ba8d0260d94e6f71b3c2fe",
+      "bytes": 5396
     },
     {
       "path": "SECURITY.md",
@@ -48,12 +48,12 @@
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "sha256": "e8405a2e73ac0a755cebdeb28d65cf9cd7285e078c88da239b65e1cf6bd71f00",
-      "bytes": 6984
+      "sha256": "30dc9328789399bbdd96cbfdd29bfd9c81d7b982d7ba36020053fc4b9ac12a01",
+      "bytes": 7293
     },
     {
       "path": "VERSION",
-      "sha256": "f6b79ae4361a0051f2705605f179f963c2a9b76a0fde51f7980854dc918f86ea",
+      "sha256": "948e9b3ace9999e95bb4aedb7ccb5fbc65cc77e573374e66893611b06db82013",
       "bytes": 7
     },
     {
@@ -73,8 +73,8 @@
     },
     {
       "path": "dependencies.lock.json",
-      "sha256": "f260bba3661cb594ae5c512b263b81ddccceee9a9119d97204c7f452cdebabd6",
-      "bytes": 24239
+      "sha256": "2341c09d8bf9ccbb067115430a64cccf99405f1f9e6c823ee1c27905d97fad11",
+      "bytes": 25337
     },
     {
       "path": "docs/BRAND-PRESET.md",
@@ -83,8 +83,8 @@
     },
     {
       "path": "docs/DEPENDENCIES.md",
-      "sha256": "eb19f06a45c67b9b5e31acb1516c8127a38b450602416b11c1e29314f780e57d",
-      "bytes": 11612
+      "sha256": "63138e82f5f4624f10804a0e44f8cc26fc11ffff7841b4fe6cf6512f28e8940b",
+      "bytes": 12521
     },
     {
       "path": "docs/INSTALL.md",
@@ -97,9 +97,14 @@
       "bytes": 2560
     },
     {
+      "path": "docs/TOOLCHAIN.md",
+      "sha256": "11c86862db7db37214b71c09ac08b2823162302a9d86247158a05e9fab2ebdaf",
+      "bytes": 4816
+    },
+    {
       "path": "docs/VERIFICATION.md",
-      "sha256": "d699e9a742a59c994660a9068e18e03a22da465afa2bb1c70b4098f91cdb627c",
-      "bytes": 4987
+      "sha256": "dc777b58ea5b03500e82b3d55680ac799119d62fbe7bcff4486d080f12740688",
+      "bytes": 5924
     },
     {
       "path": "patches/social-auto-upload-local.patch",
@@ -763,8 +768,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/references/delivery.md",
-      "sha256": "9d73bfa9b3d18f2727b0dd98c19241c6e8826b48dfb8e21a84c19620e7ef95bc",
-      "bytes": 26110
+      "sha256": "a92407382248f7fa682a6fbfc7f642f6d90cbd89041fcfc40deb03f264a98ab0",
+      "bytes": 27069
     },
     {
       "path": "skills/gbro-social-workflow/references/distribution.md",

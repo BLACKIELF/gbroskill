@@ -57,3 +57,7 @@ GBro is an aggregation of independently licensed components. Root LICENSE applie
 - **Dependencies:** package-manager dependency declarations/lockfiles are preserved. Downloaded transitive packages retain their own licenses; a source bundle does not grant rights to arbitrary third-party media used with the software.
 
 Audit date: 2026-10-12. This is a source-and-license inventory, not a guarantee that all future uses, target accounts or media are authorized.
+
+## 外部视频运行时
+
+Whisper、FFmpeg、faster-whisper、whisper.cpp 与 jianying-headless 未随包复制，其来源和许可边界见 [工具链说明](docs/TOOLCHAIN.md)。剪映相关上游非商用许可不受本仓库 MIT 覆盖。Openverse 检索结果按每项素材自己的许可证使用。

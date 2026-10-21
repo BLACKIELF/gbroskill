@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "release": "1015v2",
-  "auditDate": "2026-10-12",
-  "scope": "Current GBro directly referenced Skills and publishing/reading runtimes; optional, hosted and license-unresolved dependencies listed separately. Package-manager transitive dependencies are resolved from the included manifests/lockfiles, not vendored installed environments.",
+  "release": "1021v1",
+  "auditDate": "2026-10-21",
+  "scope": "Current GBro directly referenced Skills and publishing/reading runtimes; optional, hosted and license-unresolved dependencies listed separately. Package-manager transitive dependencies are resolved from the included manifests/lockfiles, not vendored installed environments. Media runtime entries updated on 2026-10-21; existing vendored revisions retained, not re-audited as latest upstream.",
   "components": [
     {
       "id": "gbro-social-workflow",
@@ -455,16 +455,6 @@
       "notes": "No confirmed open-source license. Not copied; use separately acquired rights."
     },
     {
-      "id": "zzsy-dir-skill",
-      "kind": "skill",
-      "source": null,
-      "license": "NOASSERTION",
-      "path": null,
-      "revision": null,
-      "status": "external-not-bundled",
-      "notes": "Private/local source and no confirmed redistribution license. No unrelated customer content copied."
-    },
-    {
       "id": "liquid-glass",
       "kind": "skill",
       "source": null,
@@ -503,46 +493,6 @@
       "revision": null,
       "status": "external-not-bundled",
       "notes": "Personal collaboration/paths/recipient policy not distributed; generic authorization and delivery boundaries are written directly into GBro."
-    },
-    {
-      "id": "multi-agent-management",
-      "kind": "private-policy",
-      "source": null,
-      "license": "NOASSERTION",
-      "path": null,
-      "revision": null,
-      "status": "external-not-bundled",
-      "notes": "Private account management is not a content publishing dependency and is not distributed."
-    },
-    {
-      "id": "oracle",
-      "kind": "optional-tool",
-      "source": null,
-      "license": "NOASSERTION",
-      "path": null,
-      "revision": null,
-      "status": "external-not-bundled",
-      "notes": "Historical content subject/optional research helper; not required to run GBro."
-    },
-    {
-      "id": "reverse-engineer-anything",
-      "kind": "content-subject",
-      "source": null,
-      "license": "NOASSERTION",
-      "path": null,
-      "revision": null,
-      "status": "external-not-bundled",
-      "notes": "REA is the subject of a separate content task, not a required GBro dependency; no reverse-engineering tools included by implication."
-    },
-    {
-      "id": "echo-design-request",
-      "kind": "unresolved-skill",
-      "source": null,
-      "license": "NOASSERTION",
-      "path": null,
-      "revision": null,
-      "status": "external-not-bundled",
-      "notes": "The name 回声造镜 from the content discussion has no matching installed Skill entry. Do not substitute the unrelated private echo-valley-design project."
     },
     {
       "id": "xiaohongshu-mcp",
@@ -623,6 +573,66 @@
       "revision": null,
       "status": "bundled",
       "notes": "Source provided in full; integrates autotok. Standard AGPL obligations apply, including modified network services."
+    },
+    {
+      "id": "openai-whisper",
+      "kind": "external-runtime-or-service",
+      "source": "https://github.com/openai/whisper",
+      "license": "MIT",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Main local ASR: large-v3-turbo, word timestamps. Code, weights and Python environment not bundled. Local tested package 20250625; not a required version."
+    },
+    {
+      "id": "ffmpeg",
+      "kind": "external-runtime-or-service",
+      "source": "https://ffmpeg.org",
+      "license": "LGPL-2.1-or-later; build-dependent GPL",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Local audio extraction, subtitles through libass, composition and encode. Binary, fonts and codecs not bundled; inspect the chosen build. Local tested version 9.0.2."
+    },
+    {
+      "id": "faster-whisper",
+      "kind": "external-runtime-or-service",
+      "source": "https://github.com/SYSTRAN/faster-whisper",
+      "license": "MIT",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Optional alternative ASR, not the default route. Local installed package 1.2.1; not bundled or claimed to have end-to-end route validation."
+    },
+    {
+      "id": "whisper.cpp",
+      "kind": "external-runtime-or-service",
+      "source": "https://github.com/ggml-org/whisper.cpp",
+      "license": "MIT",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Optional local ASR backend. Local 1.9.5 tiny.en sample passed on Metal; not equivalent to main large-v3-turbo validation. No binaries or weights bundled."
+    },
+    {
+      "id": "jianying-headless",
+      "kind": "external-runtime-or-service",
+      "source": "https://github.com/mcncarl/jianying-headless",
+      "license": "LicenseRef-Upstream-Noncommercial",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Optional external editable-draft workflow. Personal learning/non-commercial license; commercial use requires upstream written permission. Source, adapter, proprietary editor and fonts not bundled. Local 11.6 draft build verified; native headless export unsupported for that tested version."
+    },
+    {
+      "id": "openverse",
+      "kind": "external-runtime-or-service",
+      "source": "https://openverse.org",
+      "license": "Per-asset license",
+      "path": null,
+      "revision": null,
+      "status": "external-not-bundled",
+      "notes": "Optional music/media discovery; source asset license and attribution must be checked separately. No media, client or service bundled."
     }
   ]
 }

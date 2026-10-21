@@ -1,6 +1,6 @@
 # 依赖与分发清单
 
-核验日期：2026-10-12。完整机器可读记录在 [dependencies.lock.json](../dependencies.lock.json)。本表覆盖直接工作流依赖、已使用的发布／读取入口和被引用的可选能力；安装环境、账号数据及所有包管理器传递依赖未作为离线环境复制。
+清单更新：2026-10-21；原有捆绑源码版本保持不变，不表示上游已全部重新核验为最新版。完整机器可读记录在 [dependencies.lock.json](../dependencies.lock.json)。本表覆盖直接工作流依赖、已使用的发布／读取入口和被引用的可选能力；安装环境、账号数据及所有包管理器传递依赖未作为离线环境复制。
 
 ## 已捆绑
 
@@ -64,15 +64,10 @@
 | feishu-document-layout | Local custom Skill; upstream rights not established for public redistribution. Not copied. | 未建立可公开验证的上游入口 |
 | xiaohongshu-ops-skill | No LICENSE found in upstream repository; no source copied. OpenClaw-specific workflow is optional. | [https://github.com/Xiangyu-CAS/xiaohongshu-ops-skill](https://github.com/Xiangyu-CAS/xiaohongshu-ops-skill) |
 | wechat-apple-layout | No confirmed open-source license. Not copied; use separately acquired rights. | [https://github.com/S-N-Lewis/wechat-apple-layout](https://github.com/S-N-Lewis/wechat-apple-layout) |
-| zzsy-dir-skill | Private/local source and no confirmed redistribution license. No unrelated customer content copied. | 未建立可公开验证的上游入口 |
 | liquid-glass | Personal design workflow with project references; no confirmed redistribution grant. Use your own licensed visual tool. | 未建立可公开验证的上游入口 |
 | iphone-use | Host plugin and real-device permissions are separate; not bundled. | 未建立可公开验证的上游入口 |
 | documents | Use the document capability supplied by your host; no proprietary plugin source bundled. | 未建立可公开验证的上游入口 |
 | general-collaboration-habits | Personal collaboration/paths/recipient policy not distributed; generic authorization and delivery boundaries are written directly into GBro. | 未建立可公开验证的上游入口 |
-| multi-agent-management | Private account management is not a content publishing dependency and is not distributed. | 未建立可公开验证的上游入口 |
-| oracle | Historical content subject/optional research helper; not required to run GBro. | 未建立可公开验证的上游入口 |
-| reverse-engineer-anything | REA is the subject of a separate content task, not a required GBro dependency; no reverse-engineering tools included by implication. | 未建立可公开验证的上游入口 |
-| echo-design-request | The name 回声造镜 from the content discussion has no matching installed Skill entry. Do not substitute the unrelated private echo-valley-design project. | 未建立可公开验证的上游入口 |
 | xiaohongshu-mcp | Documented optional read backend, not installed or used in the audited local route. Obtain upstream separately if chosen. | [https://github.com/xpzouying/xiaohongshu-mcp](https://github.com/xpzouying/xiaohongshu-mcp) |
 | opencli | Documented optional read backend; not installed in the audited local route. Browser extension and your own authorized session required. | [https://github.com/jackwener/opencli](https://github.com/jackwener/opencli) |
 
@@ -83,3 +78,16 @@
 ## 依赖不等于已接通
 
 源码已附、依赖安装、MCP 被发现、账号登录、身份核验、作品公开可读是六个独立状态。本包仅保证发布时记录的源码与包完整性，不把作者机器上的历史登录、界面成功或账号额度转移到其他安装。
+
+## 视频与素材运行时（均未捆绑）
+
+用途、费用、验证范围见[实际工具链](TOOLCHAIN.md)。
+
+| 组件 | 许可／边界 | 来源 |
+|---|---|---|
+| openai-whisper | MIT；Main local ASR: large-v3-turbo, word timestamps. Code, weights and Python environment not bundled. Local tested package 20250625; not a required version. | [上游](https://github.com/openai/whisper) |
+| ffmpeg | LGPL-2.1-or-later; build-dependent GPL；Local audio extraction, subtitles through libass, composition and encode. Binary, fonts and codecs not bundled; inspect the chosen build. Local tested version 9.0.2. | [上游](https://ffmpeg.org) |
+| faster-whisper | MIT；Optional alternative ASR, not the default route. Local installed package 1.2.1; not bundled or claimed to have end-to-end route validation. | [上游](https://github.com/SYSTRAN/faster-whisper) |
+| whisper.cpp | MIT；Optional local ASR backend. Local 1.9.5 tiny.en sample passed on Metal; not equivalent to main large-v3-turbo validation. No binaries or weights bundled. | [上游](https://github.com/ggml-org/whisper.cpp) |
+| jianying-headless | LicenseRef-Upstream-Noncommercial；Optional external editable-draft workflow. Personal learning/non-commercial license; commercial use requires upstream written permission. Source, adapter, proprietary editor and fonts not bundled. Local 11.6 draft build verified; native headless export unsupported for that tested version. | [上游](https://github.com/mcncarl/jianying-headless) |
+| openverse | Per-asset license；Optional music/media discovery; source asset license and attribution must be checked separately. No media, client or service bundled. | [上游](https://openverse.org) |

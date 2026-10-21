@@ -2,9 +2,9 @@
 
 把资料、链接和视频整理成可核验的稿件、封面、字幕与分平台发布素材。包含当前 GBro 规则，以及可再分发的配套 Skill、CLI 与 MCP 源码。
 
-**版本：1015v4 · 核验日期：2026-10-15**
+**版本：1021v1 · 清单更新：2026-10-21**
 
-[安装与配置](docs/INSTALL.md) · [完整依赖清单](docs/DEPENDENCIES.md) · [工具能力边界](docs/TOOL-BOUNDARIES.md) · [平台尺寸与话题](skills/gbro-social-workflow/references/platform-specs.md) · [下载发布包](https://github.com/BLACKIELF/gbroskill/releases/latest)
+[安装与配置](docs/INSTALL.md) · [用了哪些工具](docs/TOOLCHAIN.md) · [完整依赖清单](docs/DEPENDENCIES.md) · [工具能力边界](docs/TOOL-BOUNDARIES.md) · [平台尺寸与话题](skills/gbro-social-workflow/references/platform-specs.md) · [下载发布包](https://github.com/BLACKIELF/gbroskill/releases/latest)
 
 ## 能做什么
 
@@ -18,6 +18,10 @@
 发布前先读取用户指定的来源对话与作品回执，复用已成功入口；重置消息第一句话先说日期、具体时间与时区，再说行动提示。见[续接与时间首句](skills/gbro-social-workflow/references/publishing-continuity.md)。
 
 需要固定来源对话时，按[空配置示例](config/publishing-continuity.example.json)填写本机 `~/.local/share/gbro-publish/config/publishing-continuity.local.json`。实际对话 ID、路径和回执只保留在本机；公开包不携带原作者的对话或自动发布授权。
+
+## 公开范围
+
+本仓库仅分发 AiGoodBro 内容工作流及其可再分发依赖，不包含其他项目的课程、客户材料、品牌资产、媒体或私有配置。工具清单列出实际职责与分发状态；列为可选不代表已接通，源码随包也不代表运行环境已安装。
 
 ## 包里有什么
 
