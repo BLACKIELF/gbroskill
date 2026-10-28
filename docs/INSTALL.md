@@ -8,6 +8,12 @@
 
 别名 `gbro`、`gbroskill`、`goodbroskill` 使用同一个 `gbro-social-workflow`，不创建第二份可写规则。
 
+## 呼吸晕染模板
+
+安装主 Skill 后，直接用支持 WebGL 2 的浏览器打开 `assets/breathing-frame/portrait-template.html`。选择本地视频，点击画布文字编辑；文件只在本机读取，不上传。模板可独立离线预览，不需要安装 JavaScript 库。系统没有 PingFang SC 时会使用替代字体，交付前检查标题与字幕排版。
+
+横版素材使用同目录的 `frame.html` 与 `loop.webm`，保留相对位置；规格和重新渲染方法见[边框说明](../skills/gbro-social-workflow/references/breathing-frame.md)。预览模板不代替最终视频编码与声音处理。
+
 ## SAU：抖音、小红书、B站、微博视频、视频号
 
 需要 Python 3.10–3.12，建议 3.11；需要已安装的 Chrome／Chromium。源码带必要修正，版本和来源见依赖清单。请在仓库根目录执行：
