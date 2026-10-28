@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "release": "1028v2",
+  "release": "1028v3",
   "auditDate": "2026-10-28",
   "scope": "Current GBro directly referenced Skills and publishing/reading runtimes; optional, hosted and license-unresolved dependencies listed separately. Package-manager transitive dependencies are resolved from the included manifests/lockfiles, not vendored installed environments. Media runtime entries updated on 2026-10-21; existing vendored revisions retained, not re-audited as latest upstream. Breathing-frame assets added on 2026-10-28 using native browser HTML/CSS/WebGL 2/Canvas/video APIs; no new third-party runtime bundled.",
   "components": [

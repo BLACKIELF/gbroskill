@@ -1,6 +1,6 @@
 ---
 name: gbro-social-workflow
-description: AiGoodBro 的图文工作流，统一响应 gbro、gbroskill、GBAskill 和 goodbroskill；“gbro ai短视频”触发 AI 短视频文案写作。收到 X 推文尤其 Tibo 时规范原生界面，识别重置/reset 消息并按状态写稿。按当前范围制作 X、微博、小红书、抖音、TikTok、B站、公众号、视频号稿件、教程和商品素材，统筹来源核验、封面内页、定版及已授权交付。适用于“图文完整版”“教程洗稿”“吸引关注”“定版/定稿”和用户提供的内容链接任务；讨论、改 Skill、翻译或局部修改限于该范围。串联现有视频工具制作视频、封面及配音，不提供表现评分。
+description: AiGoodBro 的图文工作流，统一响应 gbro、gbroskill、GBAskill 和 goodbroskill；“gbro ai短视频”触发 AI 短视频文案写作，“用gbro写重置消息”进入重置快讯流程。收到 X 推文尤其 Tibo 时规范原生界面，识别重置/reset 消息并按状态写稿。按当前范围制作 X、微博、小红书、抖音、TikTok、B站、公众号、视频号稿件、教程和商品素材，统筹来源核验、封面内页、定版及已授权交付。适用于“图文完整版”“教程洗稿”“吸引关注”“定版/定稿”和用户提供的内容链接任务；讨论、改 Skill、翻译或局部修改限于该范围。串联现有视频工具制作视频、封面及配音，不提供表现评分。
 ---
 
 # GBro 图文工作流
@@ -14,6 +14,8 @@ AiGoodBro 品牌预设的图文制作与交付约定，串联已有工具，不�
 AiGoodBro 品牌预设的小红书 AI 更新和工具资源稿先明确读者能获得什么：重置消息，或可用的 Skill／提示词；按[读者所得](references/content.md#读者所得)交齐对应信息或口令，视频用实际效果展示能力。
 
 主入口为 `$gbro-social-workflow`。自然语言“gbro”“gbroskill”和旧名“GBAskill”“gbaskill”“goodbroskill”统一使用本 Skill；`gbaskill` 目录仅保留兼容跳转，不维护另一套规则。“gbro ai短视频”（英文字母大小写不敏感）进入[AI 短视频写作](references/ai-short-video.md)，默认围绕已有成片写短文案；制作视频须按本次明确范围处理。
+
+自然语言“用gbro写重置消息”直接进入[重置快讯流程](references/publishing-continuity.md#重置消息放最前并写短)，英文字母大小写与空格差异不影响识别；主卡与视频内容卡默认使用呼吸晕染包装。只做图、只写稿等本次范围优先，发送和发布沿用当前使用者已有授权。
 
 ## 确定范围
 

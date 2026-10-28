@@ -2,7 +2,7 @@
 
 把资料、链接和视频整理成可核验的稿件、封面、字幕与分平台发布素材。包含当前 GBro 规则，以及可再分发的配套 Skill、CLI 与 MCP 源码。
 
-**版本：1028v2 · 清单更新：2026-10-28**
+**版本：1028v3 · 清单更新：2026-10-28**
 
 [安装与配置](docs/INSTALL.md) · [用了哪些工具](docs/TOOLCHAIN.md) · [完整依赖清单](docs/DEPENDENCIES.md) · [工具能力边界](docs/TOOL-BOUNDARIES.md) · [平台尺寸与话题](skills/gbro-social-workflow/references/platform-specs.md) · [下载发布包](https://github.com/BLACKIELF/gbroskill/releases/latest)
 
@@ -13,6 +13,8 @@
 - 小红书、微博、X、抖音、TikTok、B站、微信公众号、视频号、YouTube 的分平台准备与已授权发布。
 - 把「查笔记／评论」与「投稿」分开选择工具，把草稿、排期、审核、公开发布分别验收。
 - 维护每个平台的封面比例、上传预算、话题数量和工具限制；临发布再核目标账号当前入口。
+
+重置快讯直接说“用 gbro 写重置消息”。[可编辑来源卡](skills/gbro-social-workflow/assets/breathing-frame/reset-message-template.html)可换头像、改原话与译文、保存后继续使用，默认沿用慢呼吸光晕。
 
 ## 发布续接
 

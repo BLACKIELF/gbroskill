@@ -13,8 +13,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "3a0c75cc3fc954da69438eb615ee4dc1dd936dfc6279e4ea818777eafbc81305",
-      "bytes": 5447
+      "sha256": "841392cc308b988aaf5b793d1576546a7700809c38ae7cf6d67cfdf7d8c439a4",
+      "bytes": 6218
     },
     {
       "path": "CONTRIBUTING.md",
@@ -38,8 +38,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "256370dcfa05197f7d75b6779c7c0de75a72f2dd49472140243ce597a7df4ef2",
-      "bytes": 5603
+      "sha256": "17566a6ef7a3e0fbd1f39b504e545eeb1dffebcaa52db7e0f1762304119c4ef9",
+      "bytes": 5849
     },
     {
       "path": "SECURITY.md",
@@ -53,7 +53,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "629e27b269f33236f1904c6ae175406b09fa4ef3e836133e52b850f5f275fb80",
+      "sha256": "8c4c5c46b1ba6034db8b21be4ef34da5c941f8b02fb82470fdf1f8603af48fd9",
       "bytes": 7
     },
     {
@@ -73,7 +73,7 @@
     },
     {
       "path": "dependencies.lock.json",
-      "sha256": "3d7334637b13665248555ca83f6ca04ad220c68dacaf44832f4a069942423c28",
+      "sha256": "496f5e34c4ff95e4352ed504674a40b04e3a5abd9eba47c9335e22abe7ed9b6c",
       "bytes": 25473
     },
     {
@@ -88,8 +88,8 @@
     },
     {
       "path": "docs/INSTALL.md",
-      "sha256": "b713161f908d3810a03db3bb73e66fe58781cdb1b37d9d4615f95fd2ed6d166f",
-      "bytes": 7261
+      "sha256": "d08f74bd36ecec3be4f3469c0ce8a11dfd0b3e27adc41352f06eed38275b7c8e",
+      "bytes": 7549
     },
     {
       "path": "docs/TOOL-BOUNDARIES.md",
@@ -98,13 +98,13 @@
     },
     {
       "path": "docs/TOOLCHAIN.md",
-      "sha256": "fc7d44828b30d1b5e9305dad6966c90c8655bb9afbaea4db0987de0587719114",
-      "bytes": 5112
+      "sha256": "3fbb78f947168805c003851f26aa44116b31afc8f3c83c7de6049e9b7581d5cf",
+      "bytes": 5131
     },
     {
       "path": "docs/VERIFICATION.md",
-      "sha256": "9b0976c2ac757275f2d0ee53d94241c4bf0c0ce03c6a7287437328436f59380b",
-      "bytes": 7473
+      "sha256": "490e4204a05dc26ba2f4d54923b706973421e992b9a865ebf5c443eb2c9a93d9",
+      "bytes": 8676
     },
     {
       "path": "patches/social-auto-upload-local.patch",
@@ -733,8 +733,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/SKILL.md",
-      "sha256": "5aacb6dd11fdacb1e66e9ab5d032449116d97a5e7e6366582c6be6adf80455fb",
-      "bytes": 23013
+      "sha256": "e88cb5d083a4c43c9c4c6ae27c1e535e0b51e59b0c26f1bac299de44005129e4",
+      "bytes": 23420
     },
     {
       "path": "skills/gbro-social-workflow/agents/openai.yaml",
@@ -762,6 +762,11 @@
       "bytes": 4940
     },
     {
+      "path": "skills/gbro-social-workflow/assets/breathing-frame/reset-message-template.html",
+      "sha256": "5e341bd24ee6114fe600f1d98416cc5a9eacaabb6daec309bdd11756206e5f9f",
+      "bytes": 1809305
+    },
+    {
       "path": "skills/gbro-social-workflow/assets/image-style.json",
       "sha256": "1c3254f261ef30a233e23329fa0d851c3abf13fe143f8ff78d6343d708570bcd",
       "bytes": 4859
@@ -778,8 +783,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/references/breathing-frame.md",
-      "sha256": "2cbf5fe059265b7f06c68d56d22b8a68a9fd875c6cbd6089bf8f60aacee69526",
-      "bytes": 2405
+      "sha256": "a44715825007ad28011f327faf610278cf43dbf1ad33d5aa0d3d53e9771f78d5",
+      "bytes": 2728
     },
     {
       "path": "skills/gbro-social-workflow/references/confirmed-example.md",
@@ -823,8 +828,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/references/publishing-continuity.md",
-      "sha256": "350fe376977554b2b7b1454dd6791c1e6d38264828eb7c5bb0ff0ead318a1e2a",
-      "bytes": 4057
+      "sha256": "7b60a8719462e6d76ad3ae81535fa7f7cf89251f44213dc0c1c72c692f0545cb",
+      "bytes": 5499
     },
     {
       "path": "skills/gbro-social-workflow/references/storage.md",
@@ -848,13 +853,18 @@
     },
     {
       "path": "skills/gbro-social-workflow/使用说明.md",
-      "sha256": "52dbb09f0debb22a262248678b3262423274b85b52183f2b635031cd8182f1e4",
-      "bytes": 9120
+      "sha256": "5965463dd8bad1dd8d8c6987607fc98bfa82c234961a1c94bd8ca359c754ed15",
+      "bytes": 9482
     },
     {
       "path": "skills/gbro-social-workflow/竖版呼吸晕染模板-1028v2.md",
       "sha256": "ca8679424a6da4c71173f16e3483ab4fe8b093dc43904dbec2f9b02a1c219909",
       "bytes": 934
+    },
+    {
+      "path": "skills/gbro-social-workflow/重置消息卡-1028v3.md",
+      "sha256": "27c530fb4f13d035dc7ef125cd7f25dd8fc12b2bcc3c87c44192e02f07e622b6",
+      "bytes": 1241
     },
     {
       "path": "skills/human-writing/GBRO-DISTRIBUTION.md",

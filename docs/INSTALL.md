@@ -12,6 +12,8 @@
 
 安装主 Skill 后，直接用支持 WebGL 2 的浏览器打开 `assets/breathing-frame/portrait-template.html`。选择本地视频，点击画布文字编辑；文件只在本机读取，不上传。模板可独立离线预览，不需要安装 JavaScript 库。系统没有 PingFang SC 时会使用替代字体，交付前检查标题与字幕排版。
 
+重置快讯使用 `assets/breathing-frame/reset-message-template.html`：点击文字编辑，选入本地来源头像，再用“保存当前模板”导出可再次打开的 HTML。公开空白模板不含真人照片、具体消息或日期，使用前填入本次已核实内容。
+
 横版素材使用同目录的 `frame.html` 与 `loop.webm`，保留相对位置；规格和重新渲染方法见[边框说明](../skills/gbro-social-workflow/references/breathing-frame.md)。预览模板不代替最终视频编码与声音处理。
 
 ## SAU：抖音、小红书、B站、微博视频、视频号
