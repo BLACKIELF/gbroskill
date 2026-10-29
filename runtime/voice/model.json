@@ -1,0 +1,80 @@
+{
+  "repo": "mlx-community/Breeze-TTS-2-mlx-4bit",
+  "revision": "3a06d26b172ea4ae1da2f42d708383e9c79d5526",
+  "total_bytes": 3042460047,
+  "files": [
+    {
+      "path": "LICENSE",
+      "bytes": 18856,
+      "sha256": "2a143ae167cb0253d95bafa694e415570dcce336d712230d205c538523bbd855"
+    },
+    {
+      "path": "NOTICE",
+      "bytes": 146,
+      "sha256": "70bc248b98e5bb527f160c86be56d60ef8c63776c43051273643db036ebee40d"
+    },
+    {
+      "path": "README.md",
+      "bytes": 863,
+      "sha256": "f59b4554756fdd3492a4afd1c45c915263ac5d69217296c70487f064fd9446c9"
+    },
+    {
+      "path": "audio_tokenizer/config.json",
+      "bytes": 2336,
+      "sha256": "ee65bb901c876664ab8707c487157aa1a6ee57c65969b28fb5ec9dc211e68167"
+    },
+    {
+      "path": "audio_tokenizer/configuration.json",
+      "bytes": 76,
+      "sha256": "6bc26d64eb5024b4d1dab5a52371958b429256d6c9d59787f1f5294a54e0cebd"
+    },
+    {
+      "path": "audio_tokenizer/model.safetensors",
+      "bytes": 682293092,
+      "sha256": "836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258"
+    },
+    {
+      "path": "audio_tokenizer/preprocessor_config.json",
+      "bytes": 234,
+      "sha256": "fcb3805e597e786d4067706e602f6688524640f8d3396790e2e09b5942fcbdfb"
+    },
+    {
+      "path": "config.json",
+      "bytes": 12379,
+      "sha256": "f6871e70a5e937cf23f8ca6eb252ea377c9e489f87f3f7c70b76066ff5768bdf"
+    },
+    {
+      "path": "generation_config.json",
+      "bytes": 251,
+      "sha256": "2ef3f2c0ab8d9ad241059138a795433c5410fd9954efb9625674ecd2a9529434"
+    },
+    {
+      "path": "model.safetensors",
+      "bytes": 2325487160,
+      "sha256": "e8499e75e043b16d0734897869a124198aca2fa88436eb83c855d58a39fdac0a"
+    },
+    {
+      "path": "model.safetensors.index.json",
+      "bytes": 98863,
+      "sha256": "fe6889d333789126501d6f3c5aa9fe198b00477403c7c1507d86f8cf3b32e381"
+    },
+    {
+      "path": "special_tokens_map.json",
+      "bytes": 886,
+      "sha256": "194f265bb588d142a16f27d9576104eb3dab3d7ba9961541d2d6e3d5e77e6470"
+    },
+    {
+      "path": "tokenizer.json",
+      "bytes": 33386945,
+      "sha256": "d3ec9ac3eb2392389b9f5112e85d8b43316494addb587ba7b7a9d61eac23af96"
+    },
+    {
+      "path": "tokenizer_config.json",
+      "bytes": 1157960,
+      "sha256": "2c084fd6725c2284e8aa6da095a8d036d48fe79665595bfcd50371821b620e44"
+    }
+  ],
+  "distribution": "Upstream download after explicit license acceptance; weights not mirrored in this repository.",
+  "license": "BreezeBlue Research and Non-Commercial License Agreement 1.0",
+  "verified": "2026-10-30"
+}

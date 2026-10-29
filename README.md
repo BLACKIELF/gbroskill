@@ -2,9 +2,11 @@
 
 把资料、链接和视频整理成可核验的稿件、封面、字幕与分平台发布素材。包含当前 GBro 规则，以及可再分发的配套 Skill、CLI 与 MCP 源码。
 
-**版本：1028v3 · 清单更新：2026-10-28**
+**版本：1030v1 · 清单更新：2026-10-30**
 
 [安装与配置](docs/INSTALL.md) · [用了哪些工具](docs/TOOLCHAIN.md) · [完整依赖清单](docs/DEPENDENCIES.md) · [工具能力边界](docs/TOOL-BOUNDARIES.md) · [平台尺寸与话题](skills/gbro-social-workflow/references/platform-specs.md) · [下载发布包](https://github.com/BLACKIELF/gbroskill/releases/latest)
+
+[G4 配音样音与模型获取](runtime/voice/README.md) · [图文消息图片框动效](skills/gbro-social-workflow/references/breathing-frame.md#图文消息口播的图片框)
 
 ## 能做什么
 
@@ -70,9 +72,15 @@ python3 scripts/install_skills.py --destination "$HOME/.codex/skills" --all --ap
 
 ## 品牌预设与授权
 
-红蓝白、`AiGoodBro` 固定话题、小红书 10 个话题以及视频画幅是此工作流的品牌预设，不是对所有账号的强制平台规定。其他品牌先配置自己的品牌、话题和资产。代码许可不授予商标权，也不代表原账号背书。
+红蓝白、`AiGoodBro` 固定话题、小红书最多 9 个话题以及视频画幅是此工作流的品牌预设，不是对所有账号的强制平台规定。其他品牌先配置自己的品牌、话题和资产。代码许可不授予商标权，也不代表原账号背书。
 
 开源版已移除作者私人路径、账号快照、聊天目标和历史自动发布授权。任何第三方 Skill 中的安装／写入建议，仍须服从当前用户授权和宿主工具限制。私人参考图、二维码、素材版权和账号权益不随包转让。
+
+## 声音与模型
+
+AiGoodBro G4 样音、准确参考稿、参数和离线生成脚本已随包提供。模型固定为 Breeze TTS 2 MLX 4bit，完整文件约 3.04 GB；权重需先接受上游许可，再通过随包脚本获取和逐文件校验，未镜像到 GitHub 附件。模型和样音受 BreezeBlue 研究与非商业许可证约束，不适用仓库 MIT 许可。
+
+Derived from Breeze TTS 2 by BreezeBlue and licensed for research and non-commercial use only.
 
 ## 开源许可
 

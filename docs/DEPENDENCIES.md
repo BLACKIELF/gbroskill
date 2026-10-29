@@ -91,3 +91,7 @@
 | whisper.cpp | MIT；Optional local ASR backend. Local 1.9.5 tiny.en sample passed on Metal; not equivalent to main large-v3-turbo validation. No binaries or weights bundled. | [上游](https://github.com/ggml-org/whisper.cpp) |
 | jianying-headless | LicenseRef-Upstream-Noncommercial；Optional external editable-draft workflow. Personal learning/non-commercial license; commercial use requires upstream written permission. Source, adapter, proprietary editor and fonts not bundled. Local 11.6 draft build verified; native headless export unsupported for that tested version. | [上游](https://github.com/mcncarl/jianying-headless) |
 | openverse | Per-asset license；Optional music/media discovery; source asset license and attribution must be checked separately. No media, client or service bundled. | [上游](https://openverse.org) |
+
+## 配音模型与样音
+
+G4 参考样音和参数随主 Skill 附带；Breeze TTS 2 MLX 4bit 权重通过上游获取，不随本包镜像。固定 revision、14 个文件的大小和 SHA-256 见 `runtime/voice/model.json`，接受许可与安装步骤见 [配音复现](../runtime/voice/README.md)。声音样本和模型使用研究与非商业许可，MLX-Audio 为外部 Python 运行依赖。

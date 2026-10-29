@@ -61,3 +61,9 @@ Audit date: 2026-10-12. This is a source-and-license inventory, not a guarantee 
 ## 外部视频运行时
 
 Whisper、FFmpeg、faster-whisper、whisper.cpp 与 jianying-headless 未随包复制，其来源和许可边界见 [工具链说明](docs/TOOLCHAIN.md)。剪映相关上游非商用许可不受本仓库 MIT 覆盖。Openverse 检索结果按每项素材自己的许可证使用。
+
+## Breeze TTS 2 配音示例
+
+`runtime/voice/LICENSE`、`NOTICE` 保留原模型许可与归属。声音样本目录 `skills/gbro-social-workflow/assets/voice/aigoodbro-g4/` 同样带许可和 NOTICE，样音为合成的非商业复现示例，无真人身份克隆。生成样本不是独立训练模型。权重不随源码或 Release ZIP 分发；模型清单固定上游 revision，获取前须独立接受许可。MLX-Audio 通过依赖安装，未再次捆绑第三方源码。
+
+Derived from Breeze TTS 2 by BreezeBlue and licensed for research and non-commercial use only.

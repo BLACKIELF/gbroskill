@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "release": "1028v3",
-  "auditDate": "2026-10-28",
-  "scope": "Current GBro directly referenced Skills and publishing/reading runtimes; optional, hosted and license-unresolved dependencies listed separately. Package-manager transitive dependencies are resolved from the included manifests/lockfiles, not vendored installed environments. Media runtime entries updated on 2026-10-21; existing vendored revisions retained, not re-audited as latest upstream. Breathing-frame assets added on 2026-10-28 using native browser HTML/CSS/WebGL 2/Canvas/video APIs; no new third-party runtime bundled.",
+  "release": "1030v1",
+  "auditDate": "2026-10-30",
+  "scope": "Current GBro directly referenced Skills and publishing/reading runtimes; optional, hosted and license-unresolved dependencies listed separately. Package-manager transitive dependencies are resolved from the included manifests/lockfiles, not vendored installed environments. Media runtime entries updated on 2026-10-21; existing vendored revisions retained, not re-audited as latest upstream. Breathing-frame assets added on 2026-10-28 using native browser HTML/CSS/WebGL 2/Canvas/video APIs; no new third-party runtime bundled. Voice reference and local runtime added with a pinned, external license-gated model; prior unrelated components unchanged.",
   "components": [
     {
       "id": "gbro-social-workflow",
@@ -633,6 +633,36 @@
       "revision": null,
       "status": "external-not-bundled",
       "notes": "Optional music/media discovery; source asset license and attribution must be checked separately. No media, client or service bundled."
+    },
+    {
+      "id": "aigoodbro-g4-samples",
+      "kind": "voice-reference",
+      "source": "User-authorized synthetic voice reference in this repository",
+      "license": "LicenseRef-BreezeBlue-Research-NonCommercial-1.0",
+      "path": "skills/gbro-social-workflow/assets/voice/aigoodbro-g4",
+      "revision": "1030v1",
+      "status": "bundled",
+      "notes": "Synthetic samples and reproducibility metadata. Not MIT, not a fine-tuned model, no commercial-use claim."
+    },
+    {
+      "id": "breeze-tts2-mlx-4bit",
+      "kind": "model",
+      "source": "https://huggingface.co/mlx-community/Breeze-TTS-2-mlx-4bit",
+      "license": "LicenseRef-BreezeBlue-Research-NonCommercial-1.0",
+      "path": null,
+      "revision": "3a06d26b172ea4ae1da2f42d708383e9c79d5526",
+      "status": "external",
+      "notes": "3,042,460,047 bytes. Complete hashes in runtime/voice/model.json. User must independently accept the license before upstream access. No weights mirrored."
+    },
+    {
+      "id": "mlx-audio-voice-runtime",
+      "kind": "python-runtime",
+      "source": "https://github.com/Blaizzy/mlx-audio",
+      "license": "MIT",
+      "path": null,
+      "revision": "0.6.1",
+      "status": "external",
+      "notes": "Existing Apple Silicon environment used. MLX 0.32.4 and numpy 2.5.4 pinned in runtime/voice/requirements.txt. Not installed automatically."
     }
   ]
 }
