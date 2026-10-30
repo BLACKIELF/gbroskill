@@ -2,7 +2,7 @@
 
 把资料、链接和视频整理成可核验的稿件、封面、字幕与分平台发布素材。包含当前 GBro 规则，以及可再分发的配套 Skill、CLI 与 MCP 源码。
 
-**版本：1030v3 · 清单更新：2026-10-30**
+**版本：1030v4 · 清单更新：2026-10-30**
 
 [安装与配置](docs/INSTALL.md) · [用了哪些工具](docs/TOOLCHAIN.md) · [完整依赖清单](docs/DEPENDENCIES.md) · [工具能力边界](docs/TOOL-BOUNDARIES.md) · [平台尺寸与话题](skills/gbro-social-workflow/references/platform-specs.md) · [下载发布包](https://github.com/BLACKIELF/gbroskill/releases/latest)
 
@@ -75,6 +75,10 @@ python3 scripts/install_skills.py --destination "$HOME/.codex/skills" --all --ap
 红蓝白、`AiGoodBro` 固定话题、小红书最多 9 个话题以及视频画幅是此工作流的品牌预设，不是对所有账号的强制平台规定。其他品牌先配置自己的品牌、话题和资产。代码许可不授予商标权，也不代表原账号背书。
 
 开源版已移除作者私人路径、账号快照、聊天目标和历史自动发布授权。任何第三方 Skill 中的安装／写入建议，仍须服从当前用户授权和宿主工具限制。私人参考图、二维码、素材版权和账号权益不随包转让。
+
+## 平台语言
+
+AiGoodBro 的 TikTok 和 X 默认必须使用完整英文口播及英文文章／发布文案，声线沿用已确认 G4；中文配音加英文／双语字幕不能作为英文版交付。用户明确另指定时按当前要求执行，中文平台规则保持不变。
 
 ## 声音与模型
 

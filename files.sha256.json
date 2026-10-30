@@ -13,8 +13,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "3480217ecacd475dda9dfb20017f6a5d63c31bc33c906f0d22dd3eaa3c9c7e11",
-      "bytes": 9527
+      "sha256": "e69724c05e6cbeb283ef3eaa6511f300a573f108344f085ad597168dc5b51cca",
+      "bytes": 10821
     },
     {
       "path": "CONTRIBUTING.md",
@@ -38,8 +38,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "57568cb0eed13a12de115a1ea2aac9d6a04f3328e51e431acdf883c0405218fe",
-      "bytes": 6700
+      "sha256": "0ab239ad383f99eedb4afb04eabfc1d9a11acc348f6ef986a76b81d6db017d5f",
+      "bytes": 6989
     },
     {
       "path": "SECURITY.md",
@@ -53,7 +53,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "2f7b38fbc8d6662bc204ea124c3b6005572dd97d882dacd4c31080b641f85503",
+      "sha256": "2941c07e212cf3c837c38f6481e40b5ec1308e24540c17f749a5e2aaed8d826e",
       "bytes": 7
     },
     {
@@ -73,7 +73,7 @@
     },
     {
       "path": "dependencies.lock.json",
-      "sha256": "434e7b08246e5fae629ecd7400aede071d61ceb3a3c8ad50479df24459bd25f1",
+      "sha256": "b32745c6b8d1adae2cf3765239bdf973fa0d3707e0de9b4955b1ba044c42a879",
       "bytes": 27146
     },
     {
@@ -103,8 +103,8 @@
     },
     {
       "path": "docs/VERIFICATION.md",
-      "sha256": "2fe38a12b96adbcc1de1f29f35810185cd6473bcace0b82984c944ba9a4cffe7",
-      "bytes": 13908
+      "sha256": "478b569d1b40d659b7b687fe8f8e7a8feff2d2f6a95607335de04918df771da9",
+      "bytes": 15361
     },
     {
       "path": "patches/social-auto-upload-local.patch",
@@ -768,8 +768,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/SKILL.md",
-      "sha256": "02300e9cb9a507640c15fe30b431c37d52d2a8368a40b3466ed672adc04f18f7",
-      "bytes": 24186
+      "sha256": "4b9e7e451bb805001160f83b57f051df0e188210b8c0fde6a001c93aac67dc97",
+      "bytes": 24440
     },
     {
       "path": "skills/gbro-social-workflow/agents/openai.yaml",
@@ -853,8 +853,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/references/aigoodbro-voice.md",
-      "sha256": "e24ad4e3f3d29ea76ad4e01eb77eaf2c32d3bb7963bdf3055ea7cdd1848af376",
-      "bytes": 3811
+      "sha256": "a2aca2a4d5ea62daf43d62ab15d935c4822943d100252bd3e7d87fca5cd10405",
+      "bytes": 4740
     },
     {
       "path": "skills/gbro-social-workflow/references/breathing-frame.md",
@@ -873,8 +873,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/references/delivery.md",
-      "sha256": "b7b9fc8b14c33d11f0d20c6dce707f3c865dca34df637c82a79f1d86d491b994",
-      "bytes": 27707
+      "sha256": "9e4a4c09a28ae7b0b0a148be5aecfe95fc23a59f32ec4fd783a6c77f0fb748e0",
+      "bytes": 28222
     },
     {
       "path": "skills/gbro-social-workflow/references/distribution.md",
@@ -888,8 +888,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/references/platform-specs.md",
-      "sha256": "aaf3b78412f6d46e02749528aa52fb0781cdc10b015a4e39a106a280d38e141b",
-      "bytes": 16382
+      "sha256": "84f1f9741aa554787dc9597c43c52ff3fbb2e702fca9f705e85ad44316742cdb",
+      "bytes": 17616
     },
     {
       "path": "skills/gbro-social-workflow/references/platform-tools.md",
