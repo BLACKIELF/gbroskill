@@ -13,8 +13,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "a74c87edab11b6a200876a02672cf5d94faf259e1077003dd83bf0a185e1294b",
-      "bytes": 7091
+      "sha256": "16864f993c1e9cd896ff05d9d28a6f8750c1c23e85ff28f5a15d18fa8c6040de",
+      "bytes": 8090
     },
     {
       "path": "CONTRIBUTING.md",
@@ -38,7 +38,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "ea6d3ba2a6119e47b1a021b0040b5787ea42fdb7632eb713fcefc13f3e0c4157",
+      "sha256": "3fd8b582f2ac39cd0ebd910709ad95e21dc93a770131b32a18cf10fd306a4972",
       "bytes": 6510
     },
     {
@@ -53,7 +53,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "369233e9ed923458eddea89adff137d9f5ee9eaf8c2ac154328cf20c8ac3f085",
+      "sha256": "5c7079492307c69475cfb39234c557dfd96d2492167486a604b693c34bc9d8ec",
       "bytes": 7
     },
     {
@@ -73,8 +73,8 @@
     },
     {
       "path": "dependencies.lock.json",
-      "sha256": "1f0849edc512a820c938bde93db20be6cbcda90a1c56b7a5420d1ce1c3dfe170",
-      "bytes": 26971
+      "sha256": "f7eb5877191cc0ad2648cb0e9fc018f23ac1b31b4b1abeefcc76b89ceeff4f72",
+      "bytes": 27046
     },
     {
       "path": "docs/BRAND-PRESET.md",
@@ -103,8 +103,8 @@
     },
     {
       "path": "docs/VERIFICATION.md",
-      "sha256": "a7290ae9a360e57859135fb70a8c9c6d520082fe1748e7b8d9785c63f0c292cf",
-      "bytes": 10634
+      "sha256": "2aafe6a3d60ff6eb94ccfe795991f02ee3987672bbd32475d9fd81231c44ff43",
+      "bytes": 11990
     },
     {
       "path": "patches/social-auto-upload-local.patch",
@@ -768,8 +768,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/SKILL.md",
-      "sha256": "41440b5fb42648ad746045fb24ee473c9fb954162761a31bae21ff5b4966204d",
-      "bytes": 23758
+      "sha256": "e9e41be6c96115d832096571d5f716f75e7d98518835ed384bd2d1f3d6dc371c",
+      "bytes": 23980
     },
     {
       "path": "skills/gbro-social-workflow/agents/openai.yaml",
@@ -818,23 +818,23 @@
     },
     {
       "path": "skills/gbro-social-workflow/assets/voice/aigoodbro-g4/README.md",
-      "sha256": "1924ceb5a4663e91a8a606222458717fdb27c522338d08c2501adfb5cc3918c9",
-      "bytes": 863
+      "sha256": "753e60b37330482c39af23a26c3436d26136a57b26d9954ae915557595b37052",
+      "bytes": 1035
     },
     {
       "path": "skills/gbro-social-workflow/assets/voice/aigoodbro-g4/profile.json",
-      "sha256": "31dedb4433693f6b4c1536e708bfaa2542c8bcb2554b8c7153e2e1c85a248353",
-      "bytes": 2683
+      "sha256": "6bf87f737f734eebb4f91f97961be91d0e0a5b1ad306729ee5a61e286d929e89",
+      "bytes": 1769
     },
     {
       "path": "skills/gbro-social-workflow/assets/voice/aigoodbro-g4/reference.wav",
-      "sha256": "b34a90895e1c94ac042425e0c0618871d0efec4dbc68014746480b1a289661b6",
-      "bytes": 337964
+      "sha256": "3b08420d43718ae1a2e4dbbec833e4b2803f0f20394b1c7619ecc89c46a6aa21",
+      "bytes": 399404
     },
     {
-      "path": "skills/gbro-social-workflow/assets/voice/aigoodbro-g4/sample-whole.wav",
-      "sha256": "f39eb859c76ac221f8fea1f450970ce564a2f989329f1aee7fbceb72b332f179",
-      "bytes": 3394604
+      "path": "skills/gbro-social-workflow/assets/voice/aigoodbro-g4/sample.wav",
+      "sha256": "79bd626ea1c1053dcc9f787b599664da7674e7bf39e50841d8fc17a6f78ed9a0",
+      "bytes": 399438
     },
     {
       "path": "skills/gbro-social-workflow/references/ai-short-video.md",
@@ -848,8 +848,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/references/aigoodbro-voice.md",
-      "sha256": "e7cf6777ef9d8d3bee98655aa6de7d04710ab86fa5903f869210d9a760b97f31",
-      "bytes": 3119
+      "sha256": "47d5496dc52e6cdb81d0073cebf339944d94e44b1dd05a0f89f366582726b544",
+      "bytes": 3351
     },
     {
       "path": "skills/gbro-social-workflow/references/breathing-frame.md",
