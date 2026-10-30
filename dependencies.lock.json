@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "release": "1030v2",
+  "release": "1030v3",
   "auditDate": "2026-10-30",
   "scope": "Current GBro directly referenced Skills and publishing/reading runtimes; optional, hosted and license-unresolved dependencies listed separately. Package-manager transitive dependencies are resolved from the included manifests/lockfiles, not vendored installed environments. Media runtime entries updated on 2026-10-21; existing vendored revisions retained, not re-audited as latest upstream. Breathing-frame assets added on 2026-10-28 using native browser HTML/CSS/WebGL 2/Canvas/video APIs; no new third-party runtime bundled. Voice reference and local runtime added with a pinned, external license-gated model; prior unrelated components unchanged.",
   "components": [
@@ -640,9 +640,9 @@
       "source": "User-authorized synthetic voice reference in this repository",
       "license": "LicenseRef-BreezeBlue-Research-NonCommercial-1.0",
       "path": "skills/gbro-social-workflow/assets/voice/aigoodbro-g4",
-      "revision": "1030v2",
+      "revision": "1030v3",
       "status": "bundled",
-      "notes": "Original user-selected G4 reference and its constant-gain listening sample. Candidate narrations are not brand references. Not MIT, not a fine-tuned model, no commercial-use claim."
+      "notes": "Original fixed G4 cloning reference, original listening sample, and explicitly user-accepted whole-narration pure-clone benchmark. Empty instruction is required. The accepted narration is not reused as a cloning reference. Not MIT, not a fine-tuned model, no commercial-use claim."
     },
     {
       "id": "breeze-tts2-mlx-4bit",

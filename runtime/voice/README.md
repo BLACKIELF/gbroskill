@@ -1,6 +1,6 @@
 # AiGoodBro 配音复现
 
-使用 Breeze TTS 2 MLX 4bit 与随包 G4 干声参考。固定模型版本、完整文件大小与 SHA-256 在 `model.json`，样音、参考准确文字与参数在 `skills/gbro-social-workflow/assets/voice/aigoodbro-g4/`。这不是训练出的 AiGoodBro 专用模型。
+强制使用用户已接受的 G4 纯克隆路线与固定原始干声参考，除非用户明确要求换声线。`accepted-sample.wav` 是已确认的完整听感标准，`reference.wav` 仍是唯一克隆输入。固定模型版本、完整文件大小与 SHA-256 在 `model.json`，样音、参考准确文字与参数在 `skills/gbro-social-workflow/assets/voice/aigoodbro-g4/`。这不是训练出的 AiGoodBro 专用模型。
 
 Derived from Breeze TTS 2 by BreezeBlue and licensed for research and non-commercial use only.
 
@@ -27,6 +27,8 @@ python runtime/voice/generate.py --model /path/to/model --text-file narration.tx
 python runtime/voice/generate.py --model /path/to/model --text-file narration.txt --output speech.wav
 ```
 
+生成器在调用模型前检查已接受配置：`instruction=""`、原始参考及参考文字、`seed=1447`、`temperature=0.8`、`repetition_penalty=1.1`、`top_p=1.0`、`top_k=50`、24 kHz。发生配置漂移即退出，不调用模型。`cfg_scale=4` 保留原调用值；空指令下本机模型不应用 CFG，回执记为 `effective_cfg=null`。原始声音设计指令仅作来源记录，不能用于当前配音。
+
 默认把完整 UTF-8 口播稿作为一次生成输入，关闭按换行与句子拆段。任意一处出现声音问题时都重新生成全文（包括片尾），不会拼接旧音频。
 
-实际生成离线运行，不下载模型、不调用付费 API。相同参考与种子不能保证任意正文的人耳听感完全一致；逐段对照样音，优先检查开头、中段、结尾与关键数字。字幕、混音和最终视频在作品工程中制作。新音色仍需听感验收。
+实际生成离线运行，不下载模型、不调用付费 API。相同参考与种子不能保证任意正文的人耳听感完全一致；逐段对照样音，优先检查开头、中段、结尾与关键数字。字幕、混音和最终视频在作品工程中制作。新输出仍需听感验收，不能仅凭配置相同宣布声音一致。已经被用户接受的完整干声直接用于后期，不为合成视频重新随机生成。

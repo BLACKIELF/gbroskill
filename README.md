@@ -2,7 +2,7 @@
 
 把资料、链接和视频整理成可核验的稿件、封面、字幕与分平台发布素材。包含当前 GBro 规则，以及可再分发的配套 Skill、CLI 与 MCP 源码。
 
-**版本：1030v2 · 清单更新：2026-10-30**
+**版本：1030v3 · 清单更新：2026-10-30**
 
 [安装与配置](docs/INSTALL.md) · [用了哪些工具](docs/TOOLCHAIN.md) · [完整依赖清单](docs/DEPENDENCIES.md) · [工具能力边界](docs/TOOL-BOUNDARIES.md) · [平台尺寸与话题](skills/gbro-social-workflow/references/platform-specs.md) · [下载发布包](https://github.com/BLACKIELF/gbroskill/releases/latest)
 
@@ -78,7 +78,7 @@ python3 scripts/install_skills.py --destination "$HOME/.codex/skills" --all --ap
 
 ## 声音与模型
 
-AiGoodBro G4 样音、准确参考稿、参数和离线生成脚本已随包提供。模型固定为 Breeze TTS 2 MLX 4bit，完整文件约 3.04 GB；权重需先接受上游许可，再通过随包脚本获取和逐文件校验，未镜像到 GitHub 附件。模型和样音受 BreezeBlue 研究与非商业许可证约束，不适用仓库 MIT 许可。
+AiGoodBro 已确认的 G4 纯克隆整段样音、固定原始参考、准确参考稿、参数和离线生成脚本已随包提供。执行强制使用空指令，防止文字声线描述重新改变声音；已接受样音仅作听感标准，不替换原始克隆输入。模型固定为 Breeze TTS 2 MLX 4bit，完整文件约 3.04 GB；权重需先接受上游许可，再通过随包脚本获取和逐文件校验，未镜像到 GitHub 附件。模型和样音受 BreezeBlue 研究与非商业许可证约束，不适用仓库 MIT 许可。
 
 Derived from Breeze TTS 2 by BreezeBlue and licensed for research and non-commercial use only.
 
