@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>GBro · 红蓝球面光线循环背景</title>
+  <style>
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050813}
+    body{display:grid;place-items:center}canvas{display:block;width:min(100vw,56.25vh);height:auto;aspect-ratio:9/16}
+    #error{color:#dfe4ff;font:16px/1.6 system-ui;padding:24px;max-width:40em}
+  </style>
+</head>
+<body>
+<canvas id="background" width="2160" height="3840" aria-label="红蓝球面光线，4秒无缝循环，无字无声"></canvas>
+<div id="error" hidden></div>
+<script>
+/* 自包含背景，无文字、头像或外部资源。原片与文字在此背景上方独立合成。
+   默认自动循环；?rec=1 停在首帧。window.gbroBackground 提供 seek/play/pause。
+   所有运动均由周期函数决定；颗粒固定，循环点不会闪烁。 */
+(() => {
+  'use strict';
+  const canvas = document.getElementById('background');
+  const W=2160, H=3840, DURATION=4, TAU=Math.PI*2;
+  const gl=canvas.getContext('webgl2',{alpha:false,antialias:false,preserveDrawingBuffer:true});
+  if(!gl){canvas.hidden=true;const e=document.getElementById('error');e.hidden=false;e.textContent='当前浏览器未启用 WebGL 2，请使用支持 WebGL 2 的浏览器打开此 HTML。';return;}
+  const vertex=`#version 300 es
+  in vec2 position;void main(){gl_Position=vec4(position,0.,1.);}`;
+  const fragment=`#version 300 es
+ precision highp float;
+ uniform vec2 resolution;uniform float phase;out vec4 outColor;
+ float hash(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);return fract((p3.x+p3.y)*p3.z);}
+ vec3 sphere(vec3 base,vec2 p,vec2 center,float radius,vec3 tint,float lightPhase,bool lower){
+  vec2 d=p-center;float r=length(d),edge=r-radius;vec2 n=d/max(r,.001);
+  float inside=1.-smoothstep(-.0015,.0015,edge);
+  vec2 light=normalize(lower?vec2(.52+.32*sin(lightPhase),-.85):vec2(.65+.38*sin(lightPhase),.75));
+  float facing=pow(max(dot(n,light),0.),3.);
+  float breath=.70+.30*cos(lightPhase);
+  float outer=exp(-max(edge,0.)/.042)*step(0.,edge);
+  base+=tint*outer*(.028+.10*facing)*breath;
+  float rim=exp(-abs(edge)/.036);
+  float broad=exp(-abs(edge)/.19);
+  vec3 material=vec3(.012,.019,.044)+tint*(.05*broad+.64*rim*facing*breath);
+  if(lower){float blueSide=1.-smoothstep(-.25,.20,p.x);material+=vec3(.055,.10,.25)*broad*blueSide*.48;}
+  return mix(base,material,inside);
+ }
+ void main(){
+  vec2 pixel=vec2(gl_FragCoord.x,resolution.y-gl_FragCoord.y);
+  vec2 uv=pixel/resolution;vec2 p=(uv-.5)*vec2(.5625,1.);
+  float a=phase;vec3 c=vec3(.010,.014,.027);
+  vec2 blueAt=vec2(-.12+.045*sin(a),-.34+.025*cos(a));
+  vec2 redAt=vec2(.26+.035*cos(a),.22+.035*sin(a));
+  c+=vec3(.023,.055,.15)*exp(-dot(p-blueAt,p-blueAt)/.074)*(.67+.33*cos(a));
+  c+=vec3(.12,.015,.047)*exp(-dot(p-redAt,p-redAt)/.070)*(.65+.35*sin(a));
+  c=sphere(c,p,vec2(-.40,-.67),.46,vec3(.15,.34,.85),a,false);
+  c=sphere(c,p,vec2(-.30,1.06),.82,vec3(.65,.13,.26),a+1.7,true);
+  float veil=exp(-dot(p-vec2(.04,-.04),p-vec2(.04,-.04))/.30);
+  c+=vec3(.009,.007,.014)*veil;
+  c+=(hash(pixel)-.5)/255.;
+  outColor=vec4(c,1.);
+ }`;
+  function shader(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s;}
+  const program=gl.createProgram();
+  gl.attachShader(program,shader(gl.VERTEX_SHADER,vertex));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,fragment));gl.linkProgram(program);
+  if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));
+  gl.useProgram(program);gl.bindBuffer(gl.ARRAY_BUFFER,gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  const position=gl.getAttribLocation(program,'position');gl.enableVertexAttribArray(position);gl.vertexAttribPointer(position,2,gl.FLOAT,false,0,0);
+  gl.viewport(0,0,W,H);gl.uniform2f(gl.getUniformLocation(program,'resolution'),W,H);
+  const phase=gl.getUniformLocation(program,'phase');
+  let playing=false,baseTime=0,startedAt=performance.now(),frame=0,renderedFrames=0;
+  const wrap=t=>((t%DURATION)+DURATION)%DURATION;
+  const time=()=>wrap(baseTime+(playing?(performance.now()-startedAt)/1000:0));
+  function draw(t){gl.uniform1f(phase,TAU*wrap(t)/DURATION);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);renderedFrames++;}
+  function tick(){if(!playing)return;draw(time());frame=requestAnimationFrame(tick);}
+  function pause(){baseTime=time();playing=false;cancelAnimationFrame(frame);draw(baseTime);}
+  function play(){if(playing)return;startedAt=performance.now();playing=true;tick();}
+  function seek(t){if(!Number.isFinite(t))throw TypeError('seek requires finite seconds');baseTime=wrap(t);startedAt=performance.now();draw(baseTime);}
+  window.gbroBackground={duration:DURATION,width:W,height:H,ready:Promise.resolve(),play,pause,seek,precisionNote:`Native ${W}x${H} highp shader; 8-bit canvas; dither fixed in space.`,get currentTime(){return time();},get playing(){return playing;},get renderedFrames(){return renderedFrames;}};
+  // 兼容现有逐帧渲染入口；seek 是同步绘制，截图读取前浏览器会完成画布呈现。
+  window.__scene=window.gbroBackground;
+  draw(0);if(!new URLSearchParams(location.search).has('rec')&&!matchMedia('(prefers-reduced-motion: reduce)').matches)play();
+})();
+</script>
+</body>
+</html>

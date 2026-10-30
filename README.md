@@ -2,9 +2,9 @@
 
 把资料、链接和视频整理成可核验的稿件、封面、字幕与分平台发布素材。包含当前 GBro 规则，以及可再分发的配套 Skill、CLI 与 MCP 源码。
 
-**版本：1030v5 · 清单更新：2026-10-30**
+**版本：1030v6 · 清单更新：2026-10-30**
 
-[安装与配置](docs/INSTALL.md) · [用了哪些工具](docs/TOOLCHAIN.md) · [完整依赖清单](docs/DEPENDENCIES.md) · [工具能力边界](docs/TOOL-BOUNDARIES.md) · [平台尺寸与话题](skills/gbro-social-workflow/references/platform-specs.md) · [下载发布包](https://github.com/BLACKIELF/gbroskill/releases/latest)
+[云端直接接手](docs/CLOUD-HANDOFF.md) · [安装与配置](docs/INSTALL.md) · [用了哪些工具](docs/TOOLCHAIN.md) · [完整依赖清单](docs/DEPENDENCIES.md) · [工具能力边界](docs/TOOL-BOUNDARIES.md) · [平台尺寸与话题](skills/gbro-social-workflow/references/platform-specs.md) · [下载发布包](https://github.com/BLACKIELF/gbroskill/releases/latest)
 
 [G4 配音样音与模型获取](runtime/voice/README.md) · [图文消息图片框动效](skills/gbro-social-workflow/references/breathing-frame.md#图文消息口播的图片框)
 
@@ -20,7 +20,7 @@
 
 ## 发布续接
 
-发布前先读取用户指定的来源对话与作品回执，复用已成功入口；重置消息第一句话先说日期、具体时间与时区，再说行动提示。见[续接与时间首句](skills/gbro-social-workflow/references/publishing-continuity.md)。
+发布前先读取用户指定的来源对话与作品回执，复用已成功入口；重置消息尚无当篇已确认开场时，第一句先说日期、具体时间与时区，再说行动提示；已确认开场逐字保留。见[续接与时间首句](skills/gbro-social-workflow/references/publishing-continuity.md)。
 
 需要固定来源对话时，按[空配置示例](config/publishing-continuity.example.json)填写本机 `~/.local/share/gbro-publish/config/publishing-continuity.local.json`。实际对话 ID、路径和回执只保留在本机；公开包不携带原作者的对话或自动发布授权。
 
@@ -75,6 +75,10 @@ python3 scripts/install_skills.py --destination "$HOME/.codex/skills" --all --ap
 红蓝白、`AiGoodBro` 固定话题、小红书最多 9 个话题以及视频画幅是此工作流的品牌预设，不是对所有账号的强制平台规定。其他品牌先配置自己的品牌、话题和资产。代码许可不授予商标权，也不代表原账号背书。
 
 开源版已移除作者私人路径、账号快照、聊天目标和历史自动发布授权。任何第三方 Skill 中的安装／写入建议，仍须服从当前用户授权和宿主工具限制。私人参考图、二维码、素材版权和账号权益不随包转让。
+
+## 云端执行
+
+先读 [CLOUD-HANDOFF.md](docs/CLOUD-HANDOFF.md)，再运行 `python3 runtime/voice/preflight.py`。仓库包含完整规则、4 秒品牌背景、多色呼吸边框、原始参考音、已接受样音和固定配音脚本；模型需按许可另取。指定声音目前只在 Apple Silicon / MLX 环境实测，普通 Linux 云端不能自动换 TTS。云端可继续文字与排版，并复用已接受干声或把完整稿交给已验证配音端；不自动暴露本机服务。
 
 ## 视频画幅
 

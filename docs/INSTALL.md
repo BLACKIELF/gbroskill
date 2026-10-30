@@ -10,7 +10,7 @@
 
 ## 呼吸晕染模板
 
-安装主 Skill 后，直接用支持 WebGL 2 的浏览器打开 `assets/breathing-frame/portrait-template.html`。选择本地视频，点击画布文字编辑；文件只在本机读取，不上传。模板可独立离线预览，不需要安装 JavaScript 库。系统没有 PingFang SC 时会使用替代字体，交付前检查标题与字幕排版。
+安装主 Skill 后，直接用支持 WebGL 2 的浏览器打开 `assets/breathing-frame/portrait-template.html`。选择本地视频，点击画布文字编辑；文件只在本机读取，不上传。模板可独立离线预览，不需要安装 JavaScript 库。系统没有 PingFang SC 时浏览器可能使用替代字体，这不代表已获准正式交付；应取得目标环境可合法使用的授权字体，或由用户明确接受替代方案后重新验收。不要静默替代后声称同款。
 
 重置快讯使用 `assets/breathing-frame/reset-message-template.html`：点击文字编辑，选入本地来源头像，再用“保存当前模板”导出可再次打开的 HTML。公开空白模板不含真人照片、具体消息或日期，使用前填入本次已核实内容。
 
@@ -93,6 +93,10 @@ Metricool 是托管服务：在宿主的官方连接器或 [Metricool 官方接�
 ## 升级与回退
 
 保留当前 Skill／源码和自己的配置备份，比较新旧版本再合并。不要用上游更新覆盖 `patches/` 中的修复。此发布包不覆盖本机原安装，也不携带生产凭据；安装器无自动覆盖开关，回退时只处理自己实际安装的目录。
+
+## 云端接手
+
+先读 [CLOUD-HANDOFF.md](CLOUD-HANDOFF.md)，分别检查文字、渲染、字体、配音和发布入口。普通 Linux 云端没有随包已验证的 G4 生成路线；安装 Skill 不代表声音可运行。`python3 runtime/voice/preflight.py` 只读输出环境和缺项，退出码 2 仅阻止依赖该配音的步骤。
 
 ## AiGoodBro 配音
 

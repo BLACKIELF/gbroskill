@@ -137,7 +137,10 @@
         "body": 40,
         "body_emphasis": 40,
         "caption": 28,
-        "footer": 28
+        "footer": 28,
+        "subtitle_zh": 72,
+        "subtitle_en": 48,
+        "subtitle_emphasis": 52
       }
     }
   },
@@ -223,7 +226,249 @@
     "subtitle_region": "bottom",
     "preserve_source_audio": true,
     "source_aspect_ratio": "16:9",
-    "applies_to": "16:9_source_packaging_only",
-    "canvas_preset_scope": "all_new_AiGoodBro_videos_unless_explicit_current_request"
+    "applies_to": "all_AiGoodBro_videos",
+    "canvas_preset_scope": "all_new_AiGoodBro_videos_unless_explicit_current_request",
+    "subtitle_layout": {
+      "applies_to": "16:9_source_packaging_only",
+      "reference_canvas": [
+        1080,
+        1920
+      ],
+      "region": "bottom",
+      "text_baseline": "middle",
+      "max_lines_per_language": 2,
+      "zh_weight": 600,
+      "en_weight": 400,
+      "zh_first_line_center_y": 1308,
+      "zh_line_step_px": 94,
+      "en_first_line_center_y_after_one_zh_line": 1386,
+      "en_first_line_center_y_after_two_zh_lines": 1480,
+      "en_line_step_px": 66,
+      "max_text_width_px": 936,
+      "zh_color": "#FFFFFF",
+      "en_color": "#DFE4FF",
+      "scale_with_canvas": true,
+      "overflow_strategy": "split_cue_not_shrink_font",
+      "anchor": "source_bottom",
+      "zh_first_line_center_offset_px": 44,
+      "minimum_visible_glyph_gap_px": 8
+    },
+    "brand_layout": {
+      "position": "top_center_above_title",
+      "avatar_and_wordmark": "horizontal_group",
+      "avoid_positions": [
+        "bottom_left",
+        "bottom_right"
+      ],
+      "reference_canvas": [
+        1080,
+        1920
+      ],
+      "avatar_size_px": 64,
+      "avatar_top_y": 272,
+      "minimum_gap_to_title_px": 12,
+      "scale_with_canvas": true,
+      "must_fit_share_crop": true,
+      "wordmark_text": "AiGoodBro",
+      "wordmark_font_size_px": 40
+    },
+    "title_layout": {
+      "region": "top",
+      "anchor": "source_top",
+      "reference_canvas": [
+        1080,
+        1920
+      ],
+      "reference_source_top_y": 656,
+      "zh_font_role": "cover_secondary",
+      "zh_line_centers_y": [
+        392,
+        488
+      ],
+      "en_font_role": "subtitle_en",
+      "en_line_centers_y": [
+        568,
+        620
+      ],
+      "minimum_visible_glyph_gap_to_source_px": 12,
+      "scale_with_canvas": true,
+      "overflow_strategy": "semantic_wrap_and_reflow_not_shrink_font"
+    },
+    "share_preview_safe_area": {
+      "applies_to": [
+        "wechat_channels_cover",
+        "16:9_source_packaging_only"
+      ],
+      "reference_canvas": [
+        1080,
+        1920
+      ],
+      "simulated_crop_aspect_ratio": "3:4",
+      "visible_rect": [
+        0,
+        240,
+        1080,
+        1440
+      ],
+      "inner_margin_px": 32,
+      "required_content": [
+        "avatar",
+        "wordmark",
+        "complete_title",
+        "bilingual_subtitles"
+      ],
+      "verify_actual_platform_crop": true,
+      "simulation_is_not_platform_acceptance": true
+    },
+    "chinese_only_title_layout": {
+      "applies_when": "Chinese title without English title lines",
+      "reference_canvas": [
+        1080,
+        1920
+      ],
+      "anchor": "source_top",
+      "font_role": "cover_title",
+      "line_centers_y": [
+        425,
+        565
+      ],
+      "reference_source_top_y": 656,
+      "minimum_visible_glyph_gap_to_source_px": 12,
+      "scale_with_canvas": true,
+      "overflow_strategy": "semantic_wrap_and_reflow_not_shrink_font"
+    },
+    "emphasis_caption_layout": {
+      "applies_when": "user provides an emphasis line above explanatory captions",
+      "reference_canvas": [
+        1080,
+        1920
+      ],
+      "anchor": "source_bottom",
+      "text_baseline": "middle",
+      "emphasis_font_role": "subtitle_emphasis",
+      "emphasis_weight": 600,
+      "emphasis_color_role": "emphasis_text",
+      "emphasis_first_line_center_offset_px": 54,
+      "description_font_role": "subtitle_zh",
+      "description_weight": 600,
+      "description_color": "#FFFFFF",
+      "description_line_center_offsets_px": [
+        136,
+        226
+      ],
+      "max_description_lines": 2,
+      "max_text_width_px": 936,
+      "display_mode": "simultaneous_emphasis_above_description",
+      "duration_policy": "whole_clip_for_static_packaging_or_actual_cue_timing",
+      "overflow_strategy": "semantic_wrap_and_reflow_not_shrink_font",
+      "scale_with_canvas": true
+    },
+    "source_edge_transition": {
+      "default": "rounded_corners_with_light_feather",
+      "preserve_source_detail_and_burned_in_subtitles": true,
+      "width_policy": "adapt_to_source_safe_edges",
+      "card_reference": {
+        "reference_canvas": [
+          1080,
+          1920
+        ],
+        "source_width_ratio": 0.92,
+        "source_left_ratio": 0.04,
+        "source_top_ratio": 0.342,
+        "preserve_source_aspect_ratio": true,
+        "corner_radius_width_ratio": 0.05,
+        "corner_radius_height_ratio": 0.09,
+        "mask_composition": "intersect",
+        "vertical_alpha_stops": [
+          [
+            0,
+            0
+          ],
+          [
+            0.028,
+            1
+          ],
+          [
+            0.978,
+            1
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "horizontal_alpha_stops": [
+          [
+            0,
+            0
+          ],
+          [
+            0.012,
+            1
+          ],
+          [
+            0.988,
+            1
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "center_alpha": 1.0,
+        "pixel_values_scale_with_canvas": true,
+        "content_protection": "protect_subtitles_and_subject_then_narrow_feather"
+      }
+    },
+    "background_layer": "single_continuous_under_source",
+    "source_packaging_applies_to": "16:9_source_packaging_only",
+    "background_brand_scope": "AiGoodBro_only",
+    "background_template": {
+      "asset": "black-glass-loop.html",
+      "width": 2160,
+      "height": 3840,
+      "duration_seconds": 4,
+      "speed_multiplier": 1,
+      "autoplay": true,
+      "respect_reduced_motion": true,
+      "loop": "seamless_periodic",
+      "contains_text_or_source_video": false,
+      "external_dependencies": false,
+      "recording_query": "?rec=1",
+      "javascript_api": "window.gbroBackground",
+      "methods": [
+        "seek(seconds)",
+        "play()",
+        "pause()"
+      ],
+      "ready_property": "ready",
+      "fixed_render_canvas": [
+        2160,
+        3840
+      ],
+      "other_canvas_policy": "adapt_only_when_user_explicitly_requests_another_canvas_preserve_source_content"
+    },
+    "preserve_task_canvas_and_source": true
+  },
+  "brand_wordmark": {
+    "text": "AiGoodBro",
+    "segments": [
+      {
+        "text": "Ai",
+        "color": "#9BD9F8"
+      },
+      {
+        "text": "Good",
+        "color": "#FFFFFF"
+      },
+      {
+        "text": "Bro",
+        "color": "#FF6B62"
+      }
+    ],
+    "apply_to": "all_styled_brand_display_occurrences",
+    "preserve_existing_type_role": true,
+    "plain_text_fallback": "AiGoodBro",
+    "preserve_actual_identifiers_urls_tags": true
   }
 }

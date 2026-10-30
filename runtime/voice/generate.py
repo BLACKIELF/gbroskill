@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
 """Generate dry AiGoodBro speech with the bundled, hash-pinned voice reference."""
-import argparse,hashlib,json,math,os,wave
+import argparse,hashlib,json,math,os,sys,wave
 from pathlib import Path
 BASE=Path(__file__).resolve().parent
 VOICE=BASE.parents[1]/'skills/gbro-social-workflow/assets/voice/aigoodbro-g4'
@@ -28,7 +28,12 @@ def main():
     receipt=a.output.with_suffix('.json')
     if a.output.exists() or receipt.exists():raise SystemExit('Output exists; choose a new version.')
     if a.dry_run:
-        print(json.dumps({'chunks':len(parts),'reference_sha256':reference_hash,'text':text,'model_revision':json.loads((BASE/'model.json').read_text())['revision'],'generation_route':profile['generation_route'],'instruction':profile['instruction'],'cfg_scale':profile['cfg_scale'],'effective_cfg':None,'generated':False},ensure_ascii=False));return
+        print(json.dumps({'chunks':len(parts),'reference_sha256':reference_hash,'text':text,'model_revision':json.loads((BASE/'model.json').read_text())['revision'],'generation_route':profile['generation_route'],'instruction':profile['instruction'],'cfg_scale':profile['cfg_scale'],'effective_cfg':None,'generated':False,'configuration_only':True,'runtime_readiness_checked':False},ensure_ascii=False));return
+    sys.dont_write_bytecode=True
+    from preflight import inspect_environment
+    readiness=inspect_environment(a.model)
+    if not readiness['voice']['can_generate']:
+        raise SystemExit(json.dumps({'error':'voice_runtime_not_ready','readiness':readiness},ensure_ascii=False))
     os.environ['HF_HUB_OFFLINE']='1';os.environ['TOKENIZERS_PARALLELISM']='false'
     import numpy as np
     from mlx_audio.tts import load

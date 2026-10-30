@@ -13,3 +13,4 @@ jobs:
         with:
           python-version: '3.11'
       - run: python3 scripts/verify_bundle.py
+      - run: python3 -m unittest discover -s runtime/voice -p 'test_*.py'
