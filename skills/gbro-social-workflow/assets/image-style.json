@@ -223,6 +223,7 @@
     "subtitle_region": "bottom",
     "preserve_source_audio": true,
     "source_aspect_ratio": "16:9",
-    "applies_to": "16:9_source_packaging_only"
+    "applies_to": "16:9_source_packaging_only",
+    "canvas_preset_scope": "all_new_AiGoodBro_videos_unless_explicit_current_request"
   }
 }

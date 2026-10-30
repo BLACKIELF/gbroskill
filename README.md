@@ -2,7 +2,7 @@
 
 把资料、链接和视频整理成可核验的稿件、封面、字幕与分平台发布素材。包含当前 GBro 规则，以及可再分发的配套 Skill、CLI 与 MCP 源码。
 
-**版本：1030v4 · 清单更新：2026-10-30**
+**版本：1030v5 · 清单更新：2026-10-30**
 
 [安装与配置](docs/INSTALL.md) · [用了哪些工具](docs/TOOLCHAIN.md) · [完整依赖清单](docs/DEPENDENCIES.md) · [工具能力边界](docs/TOOL-BOUNDARIES.md) · [平台尺寸与话题](skills/gbro-social-workflow/references/platform-specs.md) · [下载发布包](https://github.com/BLACKIELF/gbroskill/releases/latest)
 
@@ -75,6 +75,10 @@ python3 scripts/install_skills.py --destination "$HOME/.codex/skills" --all --ap
 红蓝白、`AiGoodBro` 固定话题、小红书最多 9 个话题以及视频画幅是此工作流的品牌预设，不是对所有账号的强制平台规定。其他品牌先配置自己的品牌、话题和资产。代码许可不授予商标权，也不代表原账号背书。
 
 开源版已移除作者私人路径、账号快照、聊天目标和历史自动发布授权。任何第三方 Skill 中的安装／写入建议，仍须服从当前用户授权和宿主工具限制。私人参考图、二维码、素材版权和账号权益不随包转让。
+
+## 视频画幅
+
+AiGoodBro 新制作和包装的视频全平台统一使用 9:16、至少 1080×1920，只有用户当次明确指定其他画幅时例外。源素材按原比例内部存档，不拉伸或裁掉关键内容。独立封面继续按各平台规格制作，视频号横、竖封面分别适配；视频画幅不覆盖封面尺寸。
 
 ## 平台语言
 
