@@ -16,7 +16,7 @@
 - 把「查笔记／评论」与「投稿」分开选择工具，把草稿、排期、审核、公开发布分别验收。
 - 维护每个平台的封面比例、上传预算、话题数量和工具限制；临发布再核目标账号当前入口。
 
-重置快讯直接说“用 gbro 写重置消息”。[可编辑来源卡](skills/gbro-social-workflow/assets/breathing-frame/reset-message-template.html)可换头像、改原话与译文、保存后继续使用，默认沿用慢呼吸光晕。
+**重置消息走固定模板 [gbro-reset](skills/gbro-reset/SKILL.md)**：`python3 skills/gbro-reset/scripts/make_reset.py --mode forecast --date 2026-11-02 --time 16:00`，约 30 秒出中英 9:16 视频（G4 配音＋BGM）、三种封面和十平台文案；Muse／Grok Bot 用[粘贴指令](skills/gbro-reset/PROMPT-粘贴给Muse和GrokBot.md)。旧入口“用 gbro 写重置消息”同样进入该模板。[可编辑来源卡](skills/gbro-social-workflow/assets/breathing-frame/reset-message-template.html)可换头像、改原话与译文、保存后继续使用，默认沿用慢呼吸光晕。
 
 ## 发布续接
 
