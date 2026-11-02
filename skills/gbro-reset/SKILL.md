@@ -23,18 +23,18 @@ description: AiGoodBro 的 Codex 重置消息固定模板，一条命令出全�
 python3 <本skill目录>/scripts/make_reset.py --mode forecast --date 2026-11-02 --time 16:00
 ```
 
-- 默认输出到 `/Volumes/4t/AiGoodBro-GBro/<YYYYMMDD>-Codex重置消息/`；4T 不在或剩余不足 20GB 时自动改到 `~/Movies/AiGoodBro-GBro/`。同名自动升版本号，不覆盖旧版。
-- 配音自动调本机 BreezeTTS2（`127.0.0.1:7862`），G4 纯克隆、`instruction=""`、seed 1447，整段一次生成。
+- 默认输出到 `/Volumes/4t/AiGoodBro-GBro/<YYYYMMDD>-Codex重置消息/`；4T 不在或剩余不足 20 GiB 时自动改到 `~/Movies/AiGoodBro-GBro/`。同名自动升版本号，不覆盖旧版；显式指定空间不足的 4T 输出目录会停止写入。
+- 配音自动调本机 BreezeTTS2（`127.0.0.1:7862`），G4 纯克隆、`instruction=""`、seed 1447，整段一次生成。当前配音工作台的生成文件固定写到 4T；4T 不在或剩余不足 20 GiB 时跳过自动配音，生成文件标“待配音”，不可当成完整配音版发布。已有本地 G4 干声可通过 `--voice-file` 使用。
 - 没有本机配音服务（云端 / Muse / Grok Bot）：加 `--no-voice` 先出 BGM 版，回执标“待配音”；或用 `--voice-file 中文.wav --voice-file-en 英文.wav` 套用已有 G4 干声。**不能换别的声线顶替。**
 - 依赖：Python 3 + numpy + playwright（chromium）+ ffmpeg。
-- BGM：`assets/bgm/` 有 5 首代码原创、各 60 秒的立体声曲（pulse 电子脉冲 / lofi 轻松 / tech 科技四拍 / ambient 氛围 / bright 明快），首尾淡入淡出，剪辑时可任意截取。默认 `--bgm auto` 按日期轮换，也可 `--bgm lofi` 指定；配音时自动压到人声下方。要更长或重做：`python3 scripts/make_bgm.py --seconds 120`。
+- BGM：`assets/bgm/` 有 5 首代码原创、各 60 秒的立体声曲（pulse 电子脉冲 / lofi 轻松 / tech 科技四拍 / ambient 氛围 / bright 明快），首尾淡入淡出，剪辑时可任意截取。重置视频默认 `--bgm tech`；可显式选其他曲，或用 `--bgm auto` 按日期轮换。配音时自动压到人声下方。要更长或重做：`python3 scripts/make_bgm.py --seconds 120`。
 
 ## 固定成品（不增不减）
 
 | 文件 | 用途 |
 |---|---|
-| `Codex重置-中文竖版-*.mp4` | 1080×1920，中文 G4 + BGM；抖音/视频号/微博/快手/B站/小红书 |
-| `Codex重置-英文竖版-*.mp4` | 1080×1920，英文 G4 + BGM；X/TikTok/YouTube |
+| `Codex重置-中文竖版-*.mp4` | 1080×1920，中文 G4 + BGM；抖音/视频号/微博/快手/B站/小红书。无 G4 时文件名加“待配音” |
+| `Codex重置-英文竖版-*.mp4` | 1080×1920，英文 G4 + BGM；X/TikTok/YouTube。无 G4 时文件名加“待配音” |
 | `封面-中文/英文-9比16 / 3比4 / 16比9-*.png` | 各平台独立封面 |
 | `全平台文案-*.md / .json` | 微博、快手、抖音、视频号、小红书、B站、公众号、X、TikTok、YouTube |
 | `记录/出片回执-*.json` | 时长、哈希、配音状态 |
@@ -49,7 +49,7 @@ python3 <本skill目录>/scripts/make_reset.py --mode forecast --date 2026-11-02
 
 ## 四类视频落版卡（非重置视频也用）
 
-规则以 [视频落版文案](../gbro-social-workflow/references/delivery.md#视频落版文案) 为准。主句 = 口播末句，写进完整口播稿、整段一次生成 G4，不单独生成拼接。非重置类画面另加次行“第一时间获取重置消息！”（只显示不念），不第二次写“关注 AiGoodBro”；重置类只有主句。
+规则以 [视频落版文案](../gbro-social-workflow/references/delivery.md#视频落版文案) 为准，画面沿用已确认的四类落版样片：头像、三色品牌字、主句和浅灰次行居中排列；资讯长句自动缩至安全区内。主句 = 口播末句，写进完整口播稿、整段一次生成 G4，不单独生成拼接。非重置类画面另加次行“第一时间获取重置消息！”（只显示不念），不第二次写“关注 AiGoodBro”；重置类只有主句。
 
 | `--kind` | 主句（口播末句） | 次行 |
 |---|---|---|

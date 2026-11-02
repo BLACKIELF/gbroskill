@@ -100,6 +100,14 @@ def write_copy(out, t, tag):
 
 
 def tts(text, dest):
+    # The running Breeze workbench saves every generation on 4T, even when
+    # this script's final output has fallen back to the internal disk.
+    volume = Path('/Volumes/4t')
+    if not volume.is_mount():
+        raise RuntimeError('4T 未挂载；配音工作台的生成目录在 4T，跳过自动配音')
+    free = shutil.disk_usage(volume).free
+    if free < 20 * 1024**3:
+        raise RuntimeError(f'4T 仅余 {free / 1024**3:.1f} GiB；配音工作台会写入 4T，跳过自动配音')
     prof = json.loads((VOICE / 'profile.json').read_text()); ref = VOICE / 'reference.wav'
     assert hashlib.sha256(ref.read_bytes()).hexdigest() == prof['reference_sha256'], 'G4 参考音被改动，停止'
     with urlopen(TTS + '/health', timeout=8) as f: h = json.load(f)
@@ -156,7 +164,8 @@ font-family:"PingFang SC","Noto Sans CJK SC","Source Han Sans SC",sans-serif;fon
 .sub{font-size:%(ss)dpx;font-weight:600;color:#9BD9F8;line-height:1.2}
 .remind{font-size:%(rs)dpx;color:#E6E8F0;padding:18px 36px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18)}
 .end{font-size:%(es)dpx;color:#fff;font-weight:600}.end b{font-weight:600}
-.endcard .big.endmsg{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#fff}.endcard .big{font-size:%(ecs)dpx;line-height:1.35;white-space:nowrap}
+.endcard{gap:%(ecgap)dpx}.endcard .big.endmsg{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#fff}.endcard .big{font-size:%(ecs)dpx;line-height:1.35;white-space:nowrap;font-weight:600;letter-spacing:normal}
+.endcard .sub{line-height:1.3;color:#E6E8F0;font-weight:600;white-space:nowrap}
 .sub span{font-size:.62em;color:#C9CFE8;font-weight:500}'''
 
 
@@ -164,7 +173,7 @@ def page_html(t, lang, w, h, bg_uri, end=False, footer=True, kind='reset'):
     v = w / 1080 if h >= w else h / 1080
     tall = h / w > 1.5
     s = dict(w=w, h=h, gap=int((64 if tall else 40) * v), bs=int(56 * v), av=int(88 * v), ks=int(60 * v), gs=int((200 if tall else 176) * v),
-             ss=int((96 if tall else 84) * v), rs=int(46 * v), es=int(46 * v), ecs=int(84 * v),
+             ss=int((96 if tall else 84) * v), rs=int(46 * v), es=int(46 * v), ecs=int(84 * v), ecgap=int(44 * v),
              bg=(f'linear-gradient(#0003,#0003),url("{bg_uri}") center/cover' if bg_uri else 'transparent'))
     av = (A / 'avatar.png').as_uri()
     brand = f'<div class="brand"><img src="{av}"><div>{BRAND}</div></div>'
@@ -189,6 +198,15 @@ def shoot(html_text, path, w, h, transparent, browser, work):
     src = work / (path.stem + '.html'); src.write_text(html_text)
     pg = browser.new_page(viewport={'width': w, 'height': h}, device_scale_factor=1)
     pg.goto(src.as_uri()); pg.wait_for_function('[...document.images].every(i=>i.complete&&i.naturalWidth>0)')
+    if pg.locator('.endcard .big').count():
+        pg.evaluate('''() => {
+          const el = document.querySelector('.endcard .big');
+          const limit = document.documentElement.clientWidth - 144;
+          while (el.scrollWidth > limit && parseFloat(getComputedStyle(el).fontSize) > 64) {
+            el.style.fontSize = `${parseFloat(getComputedStyle(el).fontSize) - 2}px`;
+          }
+          if (el.scrollWidth > limit) throw new Error('落版主句超出安全区');
+        }''')
     pg.screenshot(path=str(path), omit_background=transparent); pg.close()
 
 
@@ -217,7 +235,7 @@ def main():
     ap.add_argument('--time', help='北京时间 HH:MM（card 模式可省略）')
     ap.add_argument('--out'); ap.add_argument('--voice-file'); ap.add_argument('--voice-file-en')
     ap.add_argument('--no-voice', action='store_true'); ap.add_argument('--no-en', action='store_true')
-    ap.add_argument('--bgm', default='auto', help='auto 按日期轮换，或 pulse/lofi/tech/ambient/bright')
+    ap.add_argument('--bgm', default='tech', help='默认 tech；可选 auto 按日期轮换，或 pulse/lofi/ambient/bright')
     a = ap.parse_args()
     d = dt.date.fromisoformat(a.date)
     hm = tuple(map(int, a.time.split(':'))) if a.time else None
@@ -231,9 +249,15 @@ def main():
             base = Path.home() / 'Movies/AiGoodBro-GBro'  # 4T 不在或剩余 <20GB 时改存内置盘
             print(f'⚠ 4T 不可用或空间不足，输出改到 {base}', flush=True)
         out = base / f'{d:%Y%m%d}-Codex重置消息'
+    volume = Path('/Volumes/4t')
+    if out.resolve().is_relative_to(volume.resolve()):
+        if not volume.is_mount() or shutil.disk_usage(volume).free < 20 * 1024**3:
+            sys.exit('4T 未挂载或可用空间不足 20 GiB，不能向指定的 4T 目录写入')
     out.mkdir(parents=True, exist_ok=True)
-    while (out / f'Codex重置-中文竖版-{tag}.mp4').exists():  # 不覆盖旧版
-        tag = tag[:-1] + str(int(tag[-1]) + 1) if tag[-1].isdigit() and tag[-2] == 'v' else tag + '2'
+    version = 1
+    while list(out.glob(f'*-{tag}.*')) or (out / '记录' / f'出片回执-{tag}.json').exists():
+        version += 1
+        tag = f'{d:%m%d}v{version}'
     work = out / '记录'; work.mkdir(exist_ok=True)
     t = build_text(a.mode, d, hm); write_copy(out, t, tag)
     (work / f'口播稿-{tag}.json').write_text(json.dumps(t, ensure_ascii=False, indent=2))
@@ -278,7 +302,7 @@ def main():
         else:
             music = work / f'bgm-{lang}.wav'; bgm(music, dur)
         L = '中文' if lang == 'zh' else '英文'
-        mp4 = out / f'Codex重置-{L}竖版-{tag}.mp4'
+        mp4 = out / f'Codex重置-{L}竖版{"" if v else "-待配音"}-{tag}.mp4'
         render_video(ff, work / f'layer-{lang}.png', work / f'end-{lang}.png', v, music, mp4, dur)
         for tm, nm in [(0.1, '首帧'), (dur - 0.3, '末帧')]:
             subprocess.run([ff, '-v', 'error', '-y', '-ss', f'{tm:.2f}', '-i', str(mp4), '-frames:v', '1', str(work / f'{nm}-{lang}.png')], check=True)
