@@ -6,6 +6,7 @@
 2. 能跑命令就执行：
    `python3 ~/.codex/skills/gbro-reset/scripts/make_reset.py --mode <mode> --date <YYYY-MM-DD> --time <HH:MM>`
    没有本机配音服务就加 `--no-voice`，并告诉我“待 G4 配音”。不准换其他声线。
+   BGM 可加 `--bgm pulse|lofi|tech|ambient|bright`（默认按日期轮换），原曲 60 秒在 assets/bgm/ 可直接截取。
    技能源码：https://github.com/BLACKIELF/gbroskill/tree/main/skills/gbro-reset
 3. 不能跑命令时，只输出下面固定文案（替换括号）：
    - 中文：Codex 重置消息：预计北京时间（X月X日）（下午X点）左右重置。谨慎使用重置卡，合理安排使用额度。关注 AiGoodBro，第一时间获取重置消息。 #codex #aigoodbro #tibo #codex重置

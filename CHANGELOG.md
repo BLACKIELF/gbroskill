@@ -1,3 +1,12 @@
+# 1102v2 · 2026-11-02
+
+来源：维护者要求用代码生成不同风格、更长的 BGM，方便各 Agent 截选。
+
+- 新增 `skills/gbro-reset/assets/bgm/` 5 首 60 秒原创立体声 BGM（pulse／lofi／tech／ambient／bright）及生成脚本 `scripts/make_bgm.py`（可改时长）。纯代码合成，无第三方录音。
+- `make_reset.py` 新增 `--bgm`，默认按日期轮换；有配音时音乐压到人声下方并在结尾淡出。
+
+兼容：参数向后兼容；BGM 库缺失时回退到原内置合成音。回退：删除 `assets/bgm` 与 `make_bgm.py`，恢复 1102v1 脚本。
+
 # 1102v1 · 2026-11-02
 
 来源：维护者要求重置消息“完全固定模板，又快又好”，只要好看的版式加一句北京时间几点左右重置或重置卡已发放，落版“关注 AiGoodBro，第一时间获取重置消息”，Muse 与 Grok Bot 同样适用，配音一起出。

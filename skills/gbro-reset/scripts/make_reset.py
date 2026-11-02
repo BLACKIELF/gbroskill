@@ -190,7 +190,7 @@ def render_video(ff, layer, endlayer, voice, music, out, dur):
         vf += '[3:a]aresample=48000,adelay=150|150,apad[a];[a][4:a]amix=inputs=2:duration=longest:normalize=0,loudnorm=I=-16:TP=-1.5:LRA=7[aout]'
         ins = ['-i', str(voice), '-i', str(music)]
     else:
-        vf += '[3:a]aresample=48000,volume=4,loudnorm=I=-20:TP=-1.5[aout]'; ins = ['-i', str(music)]
+        vf += '[3:a]aresample=48000,loudnorm=I=-20:TP=-1.5[aout]'; ins = ['-i', str(music)]
     cmd = [ff, '-v', 'error', '-y', '-stream_loop', '-1', '-i', str(bg), '-loop', '1', '-framerate', '30', '-i', str(layer),
            '-loop', '1', '-framerate', '30', '-i', str(endlayer), *ins, '-filter_complex', vf, '-map', '[v]', '-map', '[aout]',
            '-t', f'{dur:.3f}', '-r', '30', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '17', '-pix_fmt', 'yuv420p',
@@ -206,6 +206,7 @@ def main():
     ap.add_argument('--time', help='北京时间 HH:MM（card 模式可省略）')
     ap.add_argument('--out'); ap.add_argument('--voice-file'); ap.add_argument('--voice-file-en')
     ap.add_argument('--no-voice', action='store_true'); ap.add_argument('--no-en', action='store_true')
+    ap.add_argument('--bgm', default='auto', help='auto 按日期轮换，或 pulse/lofi/tech/ambient/bright')
     a = ap.parse_args()
     d = dt.date.fromisoformat(a.date)
     hm = tuple(map(int, a.time.split(':'))) if a.time else None
@@ -248,7 +249,16 @@ def main():
     report = {'tag': tag, 'mode': a.mode, 'beijing': f'{a.date} {a.time or ""}'.strip(), 'outputs': []}
     for lang in langs:
         v = voices[lang]; dur = (wav_seconds(v) + 0.9) if v else 9.0; dur = max(dur, 7.0)
-        music = work / f'bgm-{lang}.wav'; bgm(music, dur)
+        lib = sorted((A / 'bgm').glob('*.m4a'))
+        if lib:
+            pick = (A / 'bgm' / f'{a.bgm}.m4a') if a.bgm != 'auto' else lib[d.toordinal() % len(lib)]
+            assert pick.exists(), f'没有这首 BGM：{a.bgm}'
+            music = work / f'bgm-{lang}.wav'
+            subprocess.run([ff, '-v', 'error', '-y', '-ss', '2', '-i', str(pick), '-t', f'{dur:.3f}', '-af',
+                            f'volume={0.22 if v else 1.0},afade=t=out:st={max(0, dur - 0.8):.2f}:d=0.8', '-ar', '48000', str(music)], check=True)
+            report.setdefault('bgm', pick.stem)
+        else:
+            music = work / f'bgm-{lang}.wav'; bgm(music, dur)
         L = '中文' if lang == 'zh' else '英文'
         mp4 = out / f'Codex重置-{L}竖版-{tag}.mp4'
         render_video(ff, work / f'layer-{lang}.png', work / f'end-{lang}.png', v, music, mp4, dur)

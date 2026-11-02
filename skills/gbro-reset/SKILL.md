@@ -27,6 +27,7 @@ python3 <本skill目录>/scripts/make_reset.py --mode forecast --date 2026-11-02
 - 配音自动调本机 BreezeTTS2（`127.0.0.1:7862`），G4 纯克隆、`instruction=""`、seed 1447，整段一次生成。
 - 没有本机配音服务（云端 / Muse / Grok Bot）：加 `--no-voice` 先出 BGM 版，回执标“待配音”；或用 `--voice-file 中文.wav --voice-file-en 英文.wav` 套用已有 G4 干声。**不能换别的声线顶替。**
 - 依赖：Python 3 + numpy + playwright（chromium）+ ffmpeg。
+- BGM：`assets/bgm/` 有 5 首代码原创、各 60 秒的立体声曲（pulse 电子脉冲 / lofi 轻松 / tech 科技四拍 / ambient 氛围 / bright 明快），首尾淡入淡出，剪辑时可任意截取。默认 `--bgm auto` 按日期轮换，也可 `--bgm lofi` 指定；配音时自动压到人声下方。要更长或重做：`python3 scripts/make_bgm.py --seconds 120`。
 
 ## 固定成品（不增不减）
 
