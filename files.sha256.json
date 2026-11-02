@@ -13,8 +13,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "9b19eb61986503a3d51a0ed590bc15a698f90fba0fd575aaf577caaf8c5dc8b2",
-      "bytes": 16738
+      "sha256": "309cb3990da63f99feba0f731f8981ad6b7b757d16b4ab5d45deb6424804684a",
+      "bytes": 17713
     },
     {
       "path": "CONTRIBUTING.md",
@@ -53,7 +53,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "daf38468e2a4320676a346dc389d2b914b12fd3b545fec528df8239b4117b665",
+      "sha256": "67890005eed860d1905c350b33f071cb04a6fdb55c5ffad1dadfb5f1bb25b193",
       "bytes": 7
     },
     {
@@ -783,13 +783,13 @@
     },
     {
       "path": "skills/gbro-reset/PROMPT-粘贴给Muse和GrokBot.md",
-      "sha256": "16843bd8a0d5fb55aee52cf8702c859a6b6bdeeb08c3296526b265234c805aa2",
-      "bytes": 2377
+      "sha256": "184d6bd8e3f9626878bf1c4fe8b813877a7f75482db9efe02c3c2c3eb1ac486c",
+      "bytes": 2593
     },
     {
       "path": "skills/gbro-reset/SKILL.md",
-      "sha256": "03f0c27015323ddd76884de7790e38fdf762229cb03630d5c0f47b9a849454f2",
-      "bytes": 4503
+      "sha256": "1fbaade6d958ca4352e4b79f7c36050ac12ef5377cd98823874147274ba7e84c",
+      "bytes": 6064
     },
     {
       "path": "skills/gbro-reset/assets/avatar.png",
@@ -832,9 +832,14 @@
       "bytes": 5583
     },
     {
+      "path": "skills/gbro-reset/scripts/make_endcard.py",
+      "sha256": "754771f07fe1a1cb6279aee9e5f0a2b2f8319dba15122022aa60443bda68de98",
+      "bytes": 2072
+    },
+    {
       "path": "skills/gbro-reset/scripts/make_reset.py",
-      "sha256": "348b76793d71095e98428ded7f1eb0060191e5c08713ca9570712c8154fc6455",
-      "bytes": 17955
+      "sha256": "fb59e90368aa2ac1e7c9648505582444897b6ff2cbda963cee274b6bc3b32347",
+      "bytes": 19175
     },
     {
       "path": "skills/gbro-social-workflow/LICENSE",
@@ -843,8 +848,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/SKILL.md",
-      "sha256": "cb1f124d0d0c10bbf1af4a20ffcee32d8d8d7e42543d77a7664f4fcc64fcb970",
-      "bytes": 25361
+      "sha256": "768e75247a47fd836b4f501b263f67135935e3ed90d2afadea230ca0d5655237",
+      "bytes": 25621
     },
     {
       "path": "skills/gbro-social-workflow/agents/openai.yaml",
@@ -958,8 +963,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/references/delivery.md",
-      "sha256": "f11d8d60b724defefbebe72a2079ce5b75428e9818d37b2698e2088564d8a0c5",
-      "bytes": 29858
+      "sha256": "7cc190139e66ef03b360a52526423313c61677e6b25b76be23e39f743474fa38",
+      "bytes": 31243
     },
     {
       "path": "skills/gbro-social-workflow/references/distribution.md",

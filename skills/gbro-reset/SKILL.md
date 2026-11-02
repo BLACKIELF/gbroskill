@@ -1,6 +1,6 @@
 ---
 name: gbro-reset
-description: AiGoodBro 的 Codex 重置消息固定模板，一条命令出全套。用户发来重置/reset/重置卡/额度重置消息（含“用gbro写重置消息”“重置来了”“发重置卡了”）时强制使用。只做：北京时间几点左右重置，或重置卡已发放 + 一句提醒 + 落版“关注 AiGoodBro，第一时间获取重置消息”。输出中英 9:16 视频（G4 配音 + BGM）、9:16/3:4/16:9 封面、十平台文案。Codex、Claude、Muse、Grok Bot 通用。
+description: AiGoodBro 的 Codex 重置消息固定模板，一条命令出全套。用户发来重置/reset/重置卡/额度重置消息（含“用gbro写重置消息”“重置来了”“发重置卡了”）时强制使用。只做：北京时间几点左右重置，或重置卡已发放 + 一句提醒 + 落版“关注 AiGoodBro，第一时间获取重置消息！”（只显示、口播一次）。另含四类视频落版卡工具。输出中英 9:16 视频（G4 配音 + BGM）、9:16/3:4/16:9 封面、十平台文案。Codex、Claude、Muse、Grok Bot 通用。
 ---
 
 # GBro 重置消息 · 完全固定模板
@@ -23,7 +23,7 @@ description: AiGoodBro 的 Codex 重置消息固定模板，一条命令出全�
 python3 <本skill目录>/scripts/make_reset.py --mode forecast --date 2026-11-02 --time 16:00
 ```
 
-- 默认输出到 `/Volumes/4t/AiGoodBro-GBro/<YYYYMMDD>-Codex重置消息/`，同名自动升版本号，不覆盖旧版。
+- 默认输出到 `/Volumes/4t/AiGoodBro-GBro/<YYYYMMDD>-Codex重置消息/`；4T 不在或剩余不足 20GB 时自动改到 `~/Movies/AiGoodBro-GBro/`。同名自动升版本号，不覆盖旧版。
 - 配音自动调本机 BreezeTTS2（`127.0.0.1:7862`），G4 纯克隆、`instruction=""`、seed 1447，整段一次生成。
 - 没有本机配音服务（云端 / Muse / Grok Bot）：加 `--no-voice` 先出 BGM 版，回执标“待配音”；或用 `--voice-file 中文.wav --voice-file-en 英文.wav` 套用已有 G4 干声。**不能换别的声线顶替。**
 - 依赖：Python 3 + numpy + playwright（chromium）+ ffmpeg。
@@ -41,11 +41,27 @@ python3 <本skill目录>/scripts/make_reset.py --mode forecast --date 2026-11-02
 
 ## 固定版式（模板写死在脚本里，禁止改）
 
-黑色毛玻璃 + 红蓝球面 4 秒循环背景 → 头像 + 三色 `AiGoodBro` → `CODEX 重置消息` → 大标题（预计重置 / 已经重置 / 重置卡已发放）→ 北京时间日期 + 大号钟点“下午4点左右” → 胶囊提醒“谨慎使用重置卡，合理安排使用额度” → 底部“关注 AiGoodBro，第一时间获取重置消息”。最后 2.8 秒切到落版卡：头像 + “关注 AiGoodBro 第一时间获取重置消息”。
+黑色毛玻璃 + 红蓝球面 4 秒循环背景 → 头像 + 三色 `AiGoodBro` → `CODEX 重置消息` → 大标题（预计重置 / 已经重置 / 重置卡已发放）→ 北京时间日期 + 大号钟点“下午4点左右” → 胶囊提醒“谨慎使用重置卡，合理安排使用额度”。最后 2.8 秒主画面淡出、落版卡淡入：头像 + “关注 AiGoodBro，第一时间获取重置消息！”。视频里这句只显示一次（主画面不再写），口播也只念一次；封面没有落版卡，底部保留这句一次。
 
-固定口播（中文）：“Codex 重置消息。预计北京时间，X月X日，下午X点左右重置。谨慎使用重置卡，合理安排使用额度。关注 AiGoodBro，第一时间获取重置消息。”英文同义。约 12–15 秒。
+固定口播（中文）：“Codex 重置消息。预计北京时间，X月X日，下午X点左右重置。谨慎使用重置卡，合理安排使用额度。关注 AiGoodBro，第一时间获取重置消息！”英文同义，末句 “Follow AiGoodBro for reset news first!”。约 12–15 秒。
 
 固定话题：`#codex #aigoodbro #tibo #codex重置`；抖音 +`#AI编程`（共 5），小红书 +`#AI工具 #AI编程`，TikTok +`#ai`（共 5），快手 4 个。
+
+## 四类视频落版卡（非重置视频也用）
+
+规则以 [视频落版文案](../gbro-social-workflow/references/delivery.md#视频落版文案) 为准。主句 = 口播末句，写进完整口播稿、整段一次生成 G4，不单独生成拼接。非重置类画面另加次行“第一时间获取重置消息！”（只显示不念），不第二次写“关注 AiGoodBro”；重置类只有主句。
+
+| `--kind` | 主句（口播末句） | 次行 |
+|---|---|---|
+| `skill` 免费/其他 Skill 推荐、提示词、Skill 教学 | 关注 AiGoodBro，获取更多免费 Skill！ | 第一时间获取重置消息！ |
+| `tutorial` 设计、AI 编程、工具、自动化、剪辑、排查等教程 | 关注 AiGoodBro，获取更多教程！ | 第一时间获取重置消息！ |
+| `news` AI 资讯、模型发布、产品更新、工具动态 | 关注 AiGoodBro，第一时间获取Ai资讯消息！ | 第一时间获取重置消息！ |
+| `reset` 重置预告、已重置、重置卡 | 关注 AiGoodBro，第一时间获取重置消息！ | 无 |
+
+```bash
+python3 <本skill目录>/scripts/make_endcard.py --kind tutorial [--lang en]
+```
+输出透明落版层（叠到成片最后 2.8 秒）和带背景静帧，默认放 `~/Movies/AiGoodBro-GBro/落版卡/`。
 
 ## 禁止项
 

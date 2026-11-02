@@ -15,7 +15,7 @@ AiGoodBro 品牌预设的小红书 AI 更新和工具资源稿先明确读者能
 
 主入口为 `$gbro-social-workflow`。自然语言“gbro”“gbroskill”和旧名“GBAskill”“gbaskill”“goodbroskill”统一使用本 Skill；`gbaskill` 目录仅保留兼容跳转，不维护另一套规则。“gbro ai短视频”（英文字母大小写不敏感）进入[AI 短视频写作](references/ai-short-video.md)，默认围绕已有成片写短文案；制作视频须按本次明确范围处理。
 
-**重置／reset／重置卡消息一律强制改用 [gbro-reset](../gbro-reset/SKILL.md) 固定模板一条命令出片（1102v1 起），只写北京时间几点左右重置或重置卡已发放，落版“关注 AiGoodBro，第一时间获取重置消息”，不走长流程、不出候选。**自然语言“用gbro写重置消息”同样进入该模板，英文字母大小写与空格差异不影响识别；旧[重置快讯流程](references/publishing-continuity.md#重置消息放最前并写短)仅作历史参考。只做图、只写稿等本次范围优先，发送和发布沿用当前使用者已有授权。
+**重置／reset／重置卡消息一律强制改用 [gbro-reset](../gbro-reset/SKILL.md) 固定模板一条命令出片（1102v1 起），只写北京时间几点左右重置或重置卡已发放，落版“关注 AiGoodBro，第一时间获取重置消息！”只显示、口播一次，不走长流程、不出候选。**其他 GBro 视频落版按[视频落版文案](references/delivery.md#视频落版文案)：非重置类保留各自主句和 G4 口播，画面另写“第一时间获取重置消息！”，不第二次写“关注 AiGoodBro”。自然语言“用gbro写重置消息”同样进入该模板，英文字母大小写与空格差异不影响识别；旧[重置快讯流程](references/publishing-continuity.md#重置消息放最前并写短)仅作历史参考。只做图、只写稿等本次范围优先，发送和发布沿用当前使用者已有授权。
 
 ## 确定范围
 

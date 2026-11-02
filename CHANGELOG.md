@@ -1,3 +1,14 @@
+# 1102v3 · 2026-11-02
+
+来源：维护者确认视频落版文案：非重置类保留各自主句和 G4 口播，画面另写“第一时间获取重置消息！”，不第二次写“关注 AiGoodBro”；重置类完整重置句作主句，只显示、口播一次。
+
+- `gbro-reset`：主画面去掉底部关注句，只在最后 2.8 秒落版卡显示“关注 AiGoodBro，第一时间获取重置消息！”，口播末句同句只念一次；封面无落版卡，保留一次。
+- 新增 `scripts/make_endcard.py --kind skill|tutorial|reset|news`：四类落版卡透明层与静帧，打印口播末句；末句须写进完整稿整段生成 G4，不拼接。
+- 主 Skill 补入[视频落版文案](skills/gbro-social-workflow/references/delivery.md#视频落版文案)四类表。
+- 4T 不在或剩余不足 20GB 时默认输出改到 `~/Movies/AiGoodBro-GBro/`。
+
+回退：恢复 1102v2 的 `make_reset.py`，删除 `make_endcard.py` 与本节新增文档。
+
 # 1102v2 · 2026-11-02
 
 来源：维护者要求用代码生成不同风格、更长的 BGM，方便各 Agent 截选。

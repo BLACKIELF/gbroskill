@@ -15,8 +15,17 @@ SK = Path(__file__).resolve().parent.parent
 A = SK / 'assets'
 VOICE = A / 'voice' if (A / 'voice/reference.wav').exists() else SK.parent / 'gbro-social-workflow/assets/voice/aigoodbro-g4'
 TAGS = '#codex #aigoodbro #tibo #codex重置'
-END_ZH = '关注 AiGoodBro，第一时间获取重置消息'
-END_EN = 'Follow AiGoodBro for reset news first'
+END_ZH = '关注 AiGoodBro，第一时间获取重置消息！'
+END_EN = 'Follow AiGoodBro for reset news first!'
+# 视频落版文案（与 gbro-social-workflow/references/delivery.md#视频落版文案 一致）
+# 主句 = 口播末句；非重置类另显示次行 SECOND，次行不念、不重复“关注 AiGoodBro”；重置类只显示一次。
+ENDCARDS = {
+    'skill':    ('关注 AiGoodBro，获取更多免费 Skill！', 'Follow AiGoodBro for more free Skills!'),
+    'tutorial': ('关注 AiGoodBro，获取更多教程！', 'Follow AiGoodBro for more tutorials!'),
+    'reset':    (END_ZH, END_EN),
+    'news':     ('关注 AiGoodBro，第一时间获取Ai资讯消息！', 'Follow AiGoodBro for the latest AI news!'),
+}
+SECOND = ('第一时间获取重置消息！', 'Get reset news first!')
 REMIND_ZH = '谨慎使用重置卡，合理安排使用额度'
 TTS = 'http://127.0.0.1:7862'
 CN = '零一二三四五六七八九'
@@ -63,9 +72,9 @@ def build_text(mode, d, hm):
         spoken = f'Codex 重置卡已经发放。北京时间，{date_sp}' + (f'，{clock_sp}左右' if hm else '') + '，去账号里查看。'
         en = f'Codex reset cards are out ({en_date}' + (f', ~{en_clock} Beijing' if hm else '') + '). Check your account.'
         en_big, en_sub = 'Reset cards are out', f'{en_date} · Beijing time' + (f'<br>~{en_clock}' if hm else '')
-    zh_copy = f'{line}{REMIND_ZH}。{END_ZH}。'
-    zh_voice = f'{spoken}{REMIND_ZH}。关注 AiGoodBro，第一时间获取重置消息。'
-    en_copy = f'{en} Use reset cards wisely. {END_EN}.'
+    zh_copy = f'{line}{REMIND_ZH}。{END_ZH}'
+    zh_voice = zh_copy.replace(line, spoken)
+    en_copy = f'{en} Use reset cards wisely. {END_EN}'
     return dict(big=big, sub=sub, zh_copy=zh_copy, zh_voice=zh_voice, en_copy=en_copy,
                 en_voice=en_copy, en_big=en_big, en_sub=en_sub,
                 title=f'Codex {big}｜{sub.replace("北京时间 ", "").replace("<br>", " ")}')
@@ -151,7 +160,7 @@ font-family:"PingFang SC","Noto Sans CJK SC","Source Han Sans SC",sans-serif;fon
 .sub span{font-size:.62em;color:#C9CFE8;font-weight:500}'''
 
 
-def page_html(t, lang, w, h, bg_uri, end=False):
+def page_html(t, lang, w, h, bg_uri, end=False, footer=True, kind='reset'):
     v = w / 1080 if h >= w else h / 1080
     tall = h / w > 1.5
     s = dict(w=w, h=h, gap=int((64 if tall else 40) * v), bs=int(56 * v), av=int(88 * v), ks=int(60 * v), gs=int((200 if tall else 176) * v),
@@ -160,17 +169,19 @@ def page_html(t, lang, w, h, bg_uri, end=False):
     av = (A / 'avatar.png').as_uri()
     brand = f'<div class="brand"><img src="{av}"><div>{BRAND}</div></div>'
     if end:
-        msg = (f'关注 {BRAND}<br>第一时间获取重置消息' if lang == 'zh' else f'Follow {BRAND}<br>for reset news first')
-        body = f'<div class="wrap endcard"><img src="{av}" style="width:{int(220*v)}px;height:{int(220*v)}px;border-radius:50%"><div class="big endmsg">{msg}</div></div>'
+        main = ENDCARDS[kind][0 if lang == 'zh' else 1].replace('AiGoodBro', BRAND)
+        main = main.replace('，', '<br>', 1) if lang == 'zh' else main.replace(f'{BRAND} ', f'{BRAND}<br>', 1)
+        second = '' if kind == 'reset' else f'<div class="sub" style="font-size:{int(56*v)}px">{SECOND[0 if lang == "zh" else 1]}</div>'
+        body = f'<div class="wrap endcard"><img src="{av}" style="width:{int(220*v)}px;height:{int(220*v)}px;border-radius:50%"><div class="big endmsg">{main}</div>{second}</div>'
     else:
         big, sub = (t['big'], t['sub']) if lang == 'zh' else (t['en_big'], t['en_sub'])
         remind = REMIND_ZH if lang == 'zh' else 'Use reset cards wisely'
-        endl = f'关注 {BRAND}，第一时间获取重置消息' if lang == 'zh' else f'Follow {BRAND} for reset news first'
+        endl = (END_ZH if lang == 'zh' else END_EN).replace('AiGoodBro', BRAND)
         body = (f'<div class="wrap">{brand}<div class="kicker">CODEX 重置消息</div>' if lang == 'zh' else f'<div class="wrap">{brand}<div class="kicker">CODEX RESET</div>')
         sub_h = '<span>' + sub.replace('<br>', '</span><br>', 1) if '<br>' in sub else sub
         n = len(big) if lang == 'zh' else 0
         fs = f' style="font-size:{int(min(200, 900 / n) * (w / 1080 if h >= w else h / 1080))}px"' if n > 4 else (f' style="font-size:{int(132 * (w / 1080 if h >= w else h / 1080))}px"' if lang == 'en' else '')
-        body += f'<div class="big"{fs}>{big}</div><div class="sub">{sub_h}</div><div class="remind">{remind}</div><div class="end">{endl}</div></div>'
+        body += f'<div class="big"{fs}>{big}</div><div class="sub">{sub_h}</div><div class="remind">{remind}</div>' + (f'<div class="end">{endl}</div>' if footer else '') + '</div>'
     return '<!doctype html><meta charset="utf-8"><style>' + CSS % s + '</style>' + body
 
 
@@ -212,7 +223,14 @@ def main():
     hm = tuple(map(int, a.time.split(':'))) if a.time else None
     if a.mode != 'card' and not hm: sys.exit('forecast/done 需要 --time')
     tag = d.strftime('%m%d') + 'v1'
-    out = Path(a.out or f'/Volumes/4t/AiGoodBro-GBro/{d:%Y%m%d}-Codex重置消息')
+    if a.out:
+        out = Path(a.out)
+    else:
+        base = Path('/Volumes/4t/AiGoodBro-GBro')
+        if not base.is_dir() or shutil.disk_usage(base).free < 20 * 1024**3:
+            base = Path.home() / 'Movies/AiGoodBro-GBro'  # 4T 不在或剩余 <20GB 时改存内置盘
+            print(f'⚠ 4T 不可用或空间不足，输出改到 {base}', flush=True)
+        out = base / f'{d:%Y%m%d}-Codex重置消息'
     out.mkdir(parents=True, exist_ok=True)
     while (out / f'Codex重置-中文竖版-{tag}.mp4').exists():  # 不覆盖旧版
         tag = tag[:-1] + str(int(tag[-1]) + 1) if tag[-1].isdigit() and tag[-2] == 'v' else tag + '2'
@@ -240,7 +258,7 @@ def main():
         bg_uri = bgstill.as_uri()
         for lang in langs:
             L = '中文' if lang == 'zh' else '英文'
-            shoot(page_html(t, lang, 1080, 1920, None), work / f'layer-{lang}.png', 1080, 1920, True, br, work)
+            shoot(page_html(t, lang, 1080, 1920, None, footer=False), work / f'layer-{lang}.png', 1080, 1920, True, br, work)
             shoot(page_html(t, lang, 1080, 1920, None, end=True), work / f'end-{lang}.png', 1080, 1920, True, br, work)
             shoot(page_html(t, lang, 1080, 1920, bg_uri), out / f'封面-{L}-9比16-{tag}.png', 1080, 1920, False, br, work)
             shoot(page_html(t, lang, 1080, 1440, bg_uri), out / f'封面-{L}-3比4-{tag}.png', 1080, 1440, False, br, work)
