@@ -29,6 +29,28 @@ python3 <本skill目录>/scripts/make_reset.py --mode forecast --date 2026-11-02
 - 依赖：Python 3 + numpy + playwright（chromium）+ ffmpeg。
 - BGM：`assets/bgm/` 有 5 首代码原创、各 60 秒的立体声曲（pulse 电子脉冲 / lofi 轻松 / tech 科技四拍 / ambient 氛围 / bright 明快），首尾淡入淡出，剪辑时可任意截取。重置视频默认 `--bgm tech`；可显式选其他曲，或用 `--bgm auto` 按日期轮换。配音时自动压到人声下方。要更长或重做：`python3 scripts/make_bgm.py --seconds 120`。
 
+## 所有人先读：强制规范
+
+[GBro 视频强制规范](references/GBro视频强制规范.md) 是所有 GBro 视频的唯一硬约束（画幅、整片呼吸光底、字幕无框与标点断行、四类落版、G4 配音与末句完整、BGM、交付状态）。**执行者不得自行改动、放宽或“优化”**；只有用户明确说“改模板／改规范”才改，并同步本机与 GitHub。
+
+任何人拿到本包，先跑测试片确认效果：
+
+```bash
+python3 scripts/make_test_video.py --out ~/Movies/AiGoodBro-GBro/验收测试片
+python3 scripts/check_video.py <测试片.mp4> --voice <口播.wav> --manifest <记录/出片回执.json>
+```
+
+`check_video.py` 覆盖画幅、整片动态背景、音频非静音与末段未硬截断、成片比配音长 0.5 秒以上、配音解码未截断、落版可见、卡片数、BGM 入混音。硬项全绿只代表技术层面；**落版文字、字幕无框、手机可读性与音色必须目视和试听**。
+
+## 两条生产入口
+
+| 场景 | 命令 |
+|---|---|
+| 重置消息（固定短模板） | `python3 scripts/make_reset.py --mode forecast --date 2026-11-02 --time 16:00` |
+| 其他题材配音视频（教程／资讯／Skill） | `python3 scripts/make_narrated.py --script 稿.txt --kind tutorial --out <目录>` |
+
+`make_narrated.py` 的稿每段一张字幕卡（段间空行），**最后一段必须是该类的落版主句**，脚本会校验。默认 G4 整稿配音＋tech BGM＋全画布落版。共用版式库为 `scripts/gbro_video.py`。
+
 ## 固定成品（不增不减）
 
 | 文件 | 用途 |

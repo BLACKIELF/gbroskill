@@ -13,8 +13,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "309cb3990da63f99feba0f731f8981ad6b7b757d16b4ab5d45deb6424804684a",
-      "bytes": 17713
+      "sha256": "1c2724f9a8d60fbe53956fcddc3cd0e5e57a7e0ae159c9e42cc4ef0cf4f5dad6",
+      "bytes": 19036
     },
     {
       "path": "CONTRIBUTING.md",
@@ -53,7 +53,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "67890005eed860d1905c350b33f071cb04a6fdb55c5ffad1dadfb5f1bb25b193",
+      "sha256": "87fd29081ed6b545997361790c4c5fb9329a688f9b108cc633f2d260754907c7",
       "bytes": 7
     },
     {
@@ -783,13 +783,13 @@
     },
     {
       "path": "skills/gbro-reset/PROMPT-粘贴给Muse和GrokBot.md",
-      "sha256": "184d6bd8e3f9626878bf1c4fe8b813877a7f75482db9efe02c3c2c3eb1ac486c",
-      "bytes": 2593
+      "sha256": "ad6a0f866d384711de544b4865f5e58d3305be37b94e6e2d32374d934829f7e0",
+      "bytes": 2752
     },
     {
       "path": "skills/gbro-reset/SKILL.md",
-      "sha256": "1fbaade6d958ca4352e4b79f7c36050ac12ef5377cd98823874147274ba7e84c",
-      "bytes": 6064
+      "sha256": "1ddc658c26d3844c7a09a925dbdac02dfb6b43cc737709802ad2d1645e4d70dd",
+      "bytes": 8151
     },
     {
       "path": "skills/gbro-reset/assets/avatar.png",
@@ -827,19 +827,49 @@
       "bytes": 1083516
     },
     {
+      "path": "skills/gbro-reset/references/GBro视频强制规范.md",
+      "sha256": "1a83abd57c0a01d333ed0bdf675d37d8db4982738b2b270e582428094245df89",
+      "bytes": 7424
+    },
+    {
+      "path": "skills/gbro-reset/scripts/check_video.py",
+      "sha256": "5d464fda2ab201a57bab6b84644095708ef48f3688e5244f6880d6f6f9b0924c",
+      "bytes": 5560
+    },
+    {
+      "path": "skills/gbro-reset/scripts/gbro_video.py",
+      "sha256": "c94ed79ba9ce722c7c18a97d90824448638753364c1fca60559662f9bf75db4b",
+      "bytes": 14893
+    },
+    {
       "path": "skills/gbro-reset/scripts/make_bgm.py",
       "sha256": "f5678c34de48b8435a7f0c56cd552c09b8e428fc6558cd87079d622972474218",
       "bytes": 5583
     },
     {
       "path": "skills/gbro-reset/scripts/make_endcard.py",
-      "sha256": "754771f07fe1a1cb6279aee9e5f0a2b2f8319dba15122022aa60443bda68de98",
-      "bytes": 2072
+      "sha256": "cd5c6bad017dfd0d9630351a8bfe8fd306b39c73b395e44238d9f9fb5c757f88",
+      "bytes": 2479
+    },
+    {
+      "path": "skills/gbro-reset/scripts/make_narrated.py",
+      "sha256": "b905426c97f52776c11ddfd15896e236944b2dd041372ff0c3b8f7748f8ed1ea",
+      "bytes": 5026
     },
     {
       "path": "skills/gbro-reset/scripts/make_reset.py",
-      "sha256": "fb59e90368aa2ac1e7c9648505582444897b6ff2cbda963cee274b6bc3b32347",
-      "bytes": 19175
+      "sha256": "657aee856e9d5065c5ab0371580a22fb1a0fb332d2cddec87e3b8ffc9b45771d",
+      "bytes": 20632
+    },
+    {
+      "path": "skills/gbro-reset/scripts/make_test_video.py",
+      "sha256": "32451e7e13ad9184c5362101b60146ccc86bba0f4ed17feb56e1cdf95616c3ba",
+      "bytes": 4374
+    },
+    {
+      "path": "skills/gbro-reset/更新说明-1103v1.md",
+      "sha256": "197bbc304ca553b73b1acba517246003d7aad17393c17c284489f5497255cad8",
+      "bytes": 1536
     },
     {
       "path": "skills/gbro-social-workflow/LICENSE",
