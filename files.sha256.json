@@ -13,8 +13,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "sha256": "1c2724f9a8d60fbe53956fcddc3cd0e5e57a7e0ae159c9e42cc4ef0cf4f5dad6",
-      "bytes": 19036
+      "sha256": "c135ca458fa1e68df5307d02c84b527116eaa2bac1e3ca97def42ed45071cf69",
+      "bytes": 19414
     },
     {
       "path": "CONTRIBUTING.md",
@@ -53,7 +53,7 @@
     },
     {
       "path": "VERSION",
-      "sha256": "87fd29081ed6b545997361790c4c5fb9329a688f9b108cc633f2d260754907c7",
+      "sha256": "3e019641fa88bfb9fd7a28c5a50a533b15d98facd08229c7e8f23c71db496eac",
       "bytes": 7
     },
     {
@@ -828,8 +828,8 @@
     },
     {
       "path": "skills/gbro-reset/references/GBro视频强制规范.md",
-      "sha256": "1a83abd57c0a01d333ed0bdf675d37d8db4982738b2b270e582428094245df89",
-      "bytes": 7424
+      "sha256": "273039b07a45e866404236e850a0eab1ea92e214581a0cd6d01d7e15cade2c41",
+      "bytes": 7833
     },
     {
       "path": "skills/gbro-reset/scripts/check_video.py",
@@ -878,8 +878,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/SKILL.md",
-      "sha256": "768e75247a47fd836b4f501b263f67135935e3ed90d2afadea230ca0d5655237",
-      "bytes": 25621
+      "sha256": "46a573745ee11cc7a4fb2d4dc488440a3f00e8850c2834fc14d7b955f6288ba4",
+      "bytes": 25933
     },
     {
       "path": "skills/gbro-social-workflow/agents/openai.yaml",
@@ -903,8 +903,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/assets/breathing-frame/portrait-template.html",
-      "sha256": "36415a96bc6a08e5bd5604578c622e8c32d7b66b789263cfb7d064b426b8d246",
-      "bytes": 1806335
+      "sha256": "a63dde15de8280255143cd30bf4bc1f0010a2d4e794159a79774901c09817522",
+      "bytes": 1808108
     },
     {
       "path": "skills/gbro-social-workflow/assets/breathing-frame/render-source.html",
@@ -918,8 +918,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/assets/image-style.json",
-      "sha256": "0ee22ee2cad1b935ee813abb291d1c26b06674165c32ff6eb317566355b447ac",
-      "bytes": 11590
+      "sha256": "03a67056d6b6be1cc704481e2efd4fd8fc8cd5262d5c5e7675e512b8539ff9ef",
+      "bytes": 11920
     },
     {
       "path": "skills/gbro-social-workflow/assets/voice/aigoodbro-g4/LICENSE",
@@ -973,8 +973,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/references/breathing-frame.md",
-      "sha256": "28381794f84869728886213334c94a90c9a67686bce4be11d9cb701dabd66689",
-      "bytes": 5620
+      "sha256": "5e4f542d32eae463de26f834d0cda0086075176a0526eb34126ea986bf712d65",
+      "bytes": 9420
     },
     {
       "path": "skills/gbro-social-workflow/references/cloud-handoff.md",
@@ -993,8 +993,8 @@
     },
     {
       "path": "skills/gbro-social-workflow/references/delivery.md",
-      "sha256": "7cc190139e66ef03b360a52526423313c61677e6b25b76be23e39f743474fa38",
-      "bytes": 31243
+      "sha256": "9f7b1da57cb95f2bc25ffcd9618984e846c785066911aa4c2f770729734e06b6",
+      "bytes": 31704
     },
     {
       "path": "skills/gbro-social-workflow/references/distribution.md",
@@ -1047,9 +1047,19 @@
       "bytes": 10742
     },
     {
+      "path": "skills/gbro-social-workflow/scripts/prepare_subtitles.py",
+      "sha256": "caff110f564d17fd5469bdb944254fcb05934c8f987f14fd7c524b72f741ffad",
+      "bytes": 6782
+    },
+    {
       "path": "skills/gbro-social-workflow/使用说明.md",
       "sha256": "f5146c7b45ef1d3671468a36d9ede1fbb9378bc6630cc4c647c8d2eedb33f730",
       "bytes": 9806
+    },
+    {
+      "path": "skills/gbro-social-workflow/更新说明-1104v1.md",
+      "sha256": "efcd0922dde8c0aad1da98f808213e4d9c408a558f997f3189450912044e2d7f",
+      "bytes": 2666
     },
     {
       "path": "skills/gbro-social-workflow/竖版呼吸晕染模板-1028v2.md",

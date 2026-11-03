@@ -338,7 +338,7 @@
       "overflow_strategy": "semantic_wrap_and_reflow_not_shrink_font"
     },
     "emphasis_caption_layout": {
-      "applies_when": "user provides an emphasis line above explanatory captions",
+      "applies_when": "explicit_current_task_emphasis_outside_independent_caption_region",
       "reference_canvas": [
         1080,
         1920
@@ -372,49 +372,16 @@
           1080,
           1920
         ],
-        "source_width_ratio": 0.92,
-        "source_left_ratio": 0.04,
-        "source_top_ratio": 0.342,
+        "source_rect": [
+          44,
+          657,
+          992,
+          558
+        ],
         "preserve_source_aspect_ratio": true,
-        "corner_radius_width_ratio": 0.05,
-        "corner_radius_height_ratio": 0.09,
-        "mask_composition": "intersect",
-        "vertical_alpha_stops": [
-          [
-            0,
-            0
-          ],
-          [
-            0.028,
-            1
-          ],
-          [
-            0.978,
-            1
-          ],
-          [
-            1,
-            0
-          ]
-        ],
-        "horizontal_alpha_stops": [
-          [
-            0,
-            0
-          ],
-          [
-            0.012,
-            1
-          ],
-          [
-            0.988,
-            1
-          ],
-          [
-            1,
-            0
-          ]
-        ],
+        "corner_radius_px": 30,
+        "feather_px": 12,
+        "mask_composition": "rounded_rectangle_signed_distance_smoothstep",
         "center_alpha": 1.0,
         "pixel_values_scale_with_canvas": true,
         "content_protection": "protect_subtitles_and_subject_then_narrow_feather"
@@ -448,7 +415,42 @@
       ],
       "other_canvas_policy": "adapt_only_when_user_explicitly_requests_another_canvas_preserve_source_content"
     },
-    "preserve_task_canvas_and_source": true
+    "preserve_task_canvas_and_source": true,
+    "independent_chinese_subtitles": {
+      "reference_canvas": [
+        1080,
+        1920
+      ],
+      "source_rect": [
+        44,
+        657,
+        992,
+        558
+      ],
+      "font_postscript_name": "PingFangSC-Semibold",
+      "font_size_px": 72,
+      "color": "#FFFFFF",
+      "position": [
+        540,
+        1280
+      ],
+      "anchor": "source_bottom_plus_65_top_center",
+      "max_width_px": 936,
+      "margin_x_px": 72,
+      "max_lines": 3,
+      "outline": 0,
+      "shadow": 0,
+      "background_box": false,
+      "preserve_source_burned_subtitles": true,
+      "static_decorative_subtitle": false,
+      "editable_formats": [
+        "srt",
+        "ass"
+      ],
+      "time_mapping": "source-source_start+intro_offset",
+      "overflow_strategy": "semantic_group_and_retime_not_shrink",
+      "minimum_group_seconds": 0.75
+    }
   },
   "brand_wordmark": {
     "text": "AiGoodBro",
