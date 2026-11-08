@@ -4,7 +4,7 @@
 任一硬项失败返回 1。ASR、哈希、解码成功只能证明对应层面，主观听感仍需用户试听。
 """
 from pathlib import Path
-import argparse, json, re, subprocess, sys
+import argparse, hashlib, json, re, subprocess, sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import gbro_video as G
 
@@ -39,6 +39,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('video'); ap.add_argument('--voice'); ap.add_argument('--kind', default='news')
     ap.add_argument('--spec-only', action='store_true'); ap.add_argument('--manifest')
+    ap.add_argument('--frame-review', help='最终视频红绿多色呼吸包框的实际目视回执 JSON')
     a = ap.parse_args()
     checks, hard_fail = [], False
 
@@ -51,6 +52,26 @@ def main():
     add('文件存在', v.is_file(), str(v))
     if not v.is_file():
         print(json.dumps({'pass': False, 'checks': checks}, ensure_ascii=False, indent=2)); sys.exit(1)
+    review = {}
+    try:
+        if a.frame_review:
+            review = json.loads(Path(a.frame_review).expanduser().read_text())
+    except (OSError, ValueError):
+        pass
+    if not isinstance(review, dict):
+        review = {}
+    digest = hashlib.sha256()
+    with v.open('rb') as f:
+        for block in iter(lambda: f.read(1024 * 1024), b''):
+            digest.update(block)
+    expected_hash = digest.hexdigest()
+    evidence = review.get('evidence_frames', [])
+    review_ok = (review.get('video_sha256') == expected_hash
+                 and all(review.get(k) is True for k in ('red_green_visible', 'motion_visible', 'seams_checked'))
+                 and isinstance(evidence, list) and len(evidence) >= 4
+                 and all(isinstance(x, str) and Path(x).is_absolute() and Path(x).is_file() for x in evidence))
+    add('红绿多色呼吸包框的最终成片目视回执', review_ok,
+        '已绑定本次视频及实际对比图；视觉结论须由检查者负责' if review_ok else '缺有效回执；背景运动和解码成功不能代替包框验收')
     info = probe(v); vs = [s for s in info['streams'] if s['codec_type'] == 'video'][0]
     aus = [s for s in info['streams'] if s['codec_type'] == 'audio']
     dur = float(info['format']['duration'])
